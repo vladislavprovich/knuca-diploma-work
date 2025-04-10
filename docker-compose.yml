@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # MongoDB service
+  unikmongodb:
+    image: mongo:latest
+    container_name: unikmongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=logistics_db
+    networks:
+      - logistics-network
+    restart: unless-stopped
+
+  # Go backend service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logistics-backend
+    ports:
+      - "6060:6060"
+    depends_on:
+      - unikmongodb
+    environment:
+      - MONGO_URI=mongodb://unikmongodb:27017
+      - DB_NAME=logistics_db
+      - PORT=6060
+    networks:
+      - logistics-network
+    restart: unless-stopped
+
+networks:
+  logistics-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
