@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"universati-savokh/internal/database"
-	"universati-savokh/internal/models"
-	"universati-savokh/internal/repository"
-	"universati-savokh/internal/service"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/database"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/repository"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

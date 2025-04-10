@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  start:
+    desc: "Start the local LogisticProject service"
+    cmds:
+      - echo "Starting local LogisticProject service..."
+      - go run cmd/main.go --config=./.env
+    ignore_error: true
+    silent: false
+
+  fmt:
+    desc: "Format Go code"
+    cmds:
+      - echo "Formatting code..."
+      - gofmt -w .
+    silent: false

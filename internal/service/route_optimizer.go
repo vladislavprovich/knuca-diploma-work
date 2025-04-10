@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/repository"
 	"sort"
 	"time"
-	"universati-savokh/internal/models"
-	"universati-savokh/internal/repository"
 )
 
 // RouteOptimizerService handles route optimization logic
@@ -175,12 +175,12 @@ func (s *RouteOptimizerService) generateRoutesForCategory(
 
 		// Create a new route
 		route := &models.Route{
-			ID:            routeID,
-			TruckID:       truck.ID,
-			DeliveryDate:  deliveryDate,
-			StartPoint:    startPoint.ID,
+			ID:             routeID,
+			TruckID:        truck.ID,
+			DeliveryDate:   deliveryDate,
+			StartPoint:     startPoint.ID,
 			DeliveryPoints: []int{startPoint.ID},
-			Status:        models.RouteStatus.Planned,
+			Status:         models.RouteStatus.Planned,
 		}
 
 		// Mark truck as unavailable

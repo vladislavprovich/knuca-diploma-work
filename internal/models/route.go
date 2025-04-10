@@ -6,16 +6,16 @@ import (
 
 // Route represents a delivery route with assigned truck and delivery points
 type Route struct {
-	ID            int       `json:"id" bson:"_id"`
-	TruckID       int       `json:"truck_id" bson:"truck_id"`
-	DeliveryDate  time.Time `json:"delivery_date" bson:"delivery_date"`
-	StartPoint    int       `json:"start_point" bson:"start_point"` // ID of the starting delivery point
+	ID             int       `json:"id" bson:"_id"`
+	TruckID        int       `json:"truck_id" bson:"truck_id"`
+	DeliveryDate   time.Time `json:"delivery_date" bson:"delivery_date"`
+	StartPoint     int       `json:"start_point" bson:"start_point"`         // ID of the starting delivery point
 	DeliveryPoints []int     `json:"delivery_points" bson:"delivery_points"` // IDs of delivery points in order
-	TotalDistance int       `json:"total_distance" bson:"total_distance"` // Total route distance in km
-	TotalCost     int       `json:"total_cost" bson:"total_cost"` // Total cost of the route
-	Status        string    `json:"status" bson:"status"` // Planned, In Progress, Completed, Cancelled
-	CreatedAt     time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" bson:"updated_at"`
+	TotalDistance  int       `json:"total_distance" bson:"total_distance"`   // Total route distance in km
+	TotalCost      int       `json:"total_cost" bson:"total_cost"`           // Total cost of the route
+	Status         string    `json:"status" bson:"status"`                   // Planned, In Progress, Completed, Cancelled
+	CreatedAt      time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at" bson:"updated_at"`
 }
 
 // RouteStatus defines the possible statuses for a route

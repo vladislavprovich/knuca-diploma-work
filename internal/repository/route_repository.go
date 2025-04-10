@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
 	"time"
-	"universati-savokh/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +29,7 @@ func (r *RouteRepository) Create(ctx context.Context, route *models.Route) error
 	now := time.Now()
 	route.CreatedAt = now
 	route.UpdatedAt = now
-	
+
 	_, err := r.collection.InsertOne(ctx, route)
 	return err
 }
@@ -84,7 +84,7 @@ func (r *RouteRepository) GetByDate(ctx context.Context, date time.Time) ([]*mod
 	// Create start and end of the day for the query
 	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
-	
+
 	cursor, err := r.collection.Find(ctx, bson.M{
 		"delivery_date": bson.M{
 			"$gte": startOfDay,
@@ -124,7 +124,7 @@ func (r *RouteRepository) GetByTruckID(ctx context.Context, truckID int) ([]*mod
 func (r *RouteRepository) Update(ctx context.Context, route *models.Route) error {
 	// Update the timestamp
 	route.UpdatedAt = time.Now()
-	
+
 	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": route.ID}, route)
 	return err
 }
@@ -159,7 +159,7 @@ func (r *RouteRepository) GetNextRouteID(ctx context.Context) (int, error) {
 	// Find the route with the highest ID
 	opts := options.FindOne().SetSort(bson.M{"_id": -1})
 	var route models.Route
-	
+
 	err := r.collection.FindOne(ctx, bson.M{}, opts).Decode(&route)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -167,6 +167,6 @@ func (r *RouteRepository) GetNextRouteID(ctx context.Context) (int, error) {
 		}
 		return 0, err
 	}
-	
+
 	return route.ID + 1, nil
 }

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
-	"universati-savokh/internal/models"
+	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
