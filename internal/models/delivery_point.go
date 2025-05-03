@@ -26,16 +26,28 @@ func IsValidCategory(category string) bool {
 
 // CanAcceptTruck checks if a delivery point can accept a truck with the given capacity
 func (dp *DeliveryPoint) CanAcceptTruck(truckCapacity int) bool {
-	pointCapacity, exists := CategoryPalletCapacity[dp.Category]
+	_, exists := CategoryPalletCapacity[dp.Category]
 	if !exists {
 		return false
 	}
 
-	// Special case: if a point is suitable for a 15-pallet truck,
-	// then a 10-pallet truck can also access it
-	if dp.Category == "Yellow" && truckCapacity == 10 {
-		return true
+	// Implement category-based routing rules with fallback for flexibility:
+	// 1. Blue category (33) can be accessed by 33-pallet trucks primarily
+	//    but can accept 18-pallet trucks if necessary (may require multiple trips)
+	// 2. Green category (18) can be accessed by 18-pallet trucks and smaller
+	// 3. Yellow category (15) can be accessed by 15-pallet trucks and smaller
+	// 4. Purple category (10) can be accessed by 10-pallet trucks
+	switch dp.Category {
+	case "Blue":
+		// Blue points prefer 33-pallet trucks but can use 18-pallet trucks if needed
+		return truckCapacity == 33 || truckCapacity == 18
+	case "Green":
+		return truckCapacity <= 18
+	case "Yellow":
+		return truckCapacity <= 15
+	case "Purple":
+		return truckCapacity <= 10
+	default:
+		return false
 	}
-
-	return truckCapacity <= pointCapacity
 }

@@ -98,6 +98,38 @@ const DeliveryPoints = () => {
     }
   };
 
+  // Get compatible truck information based on category
+  const getCategoryTruckInfo = (category) => {
+    switch (category) {
+      case 'Blue':
+        return 'Compatible with 33-pallet trucks (with trailers) and 18-pallet trucks';
+      case 'Green':
+        return 'Compatible with 18-pallet trucks and smaller';
+      case 'Yellow':
+        return 'Compatible with 15-pallet trucks and smaller';
+      case 'Purple':
+        return 'Compatible with 10-pallet trucks only';
+      default:
+        return 'Unknown compatibility';
+    }
+  };
+  
+  // Get color code for truck compatibility
+  const getTruckCompatibilityColor = (category) => {
+    switch (category) {
+      case 'Blue':
+        return '#1976d2'; // Primary blue
+      case 'Green':
+        return '#2e7d32'; // Success green
+      case 'Yellow':
+        return '#ed6c02'; // Warning orange
+      case 'Purple':
+        return '#9c27b0'; // Secondary purple
+      default:
+        return '#757575'; // Default gray
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -141,6 +173,43 @@ const DeliveryPoints = () => {
           </FormControl>
         </Grid>
       </Grid>
+
+      {/* Category Information */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Category Information
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Chip label="Blue" color="primary" sx={{ mb: 1 }} />
+            <Typography variant="body2">33-pallet trucks (with trailers) and 18-pallet trucks</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <strong>Truck Types:</strong> Large trucks with trailers (33 pallets) or medium trucks (18 pallets)
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Chip label="Green" color="success" sx={{ mb: 1 }} />
+            <Typography variant="body2">18-pallet trucks and smaller</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <strong>Truck Types:</strong> Medium trucks (18 pallets) or smaller trucks (15 or 10 pallets)
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Chip label="Yellow" color="warning" sx={{ mb: 1 }} />
+            <Typography variant="body2">15-pallet trucks and smaller</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <strong>Truck Types:</strong> Small-medium trucks (15 pallets) or small trucks (10 pallets)
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Chip label="Purple" color="secondary" sx={{ mb: 1 }} />
+            <Typography variant="body2">10-pallet trucks only</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <strong>Truck Types:</strong> Small trucks only (10 pallets)
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
       
       {/* Delivery Points Table */}
       <TableContainer component={Paper}>
@@ -150,6 +219,7 @@ const DeliveryPoints = () => {
               <TableCell>ID</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Pallets</TableCell>
+              <TableCell>Compatible Trucks</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Address</TableCell>
               <TableCell>Actions</TableCell>
@@ -167,6 +237,7 @@ const DeliveryPoints = () => {
                   />
                 </TableCell>
                 <TableCell>{point.pallets}</TableCell>
+                <TableCell>{getCategoryTruckInfo(point.category)}</TableCell>
                 <TableCell>{point.description || '-'}</TableCell>
                 <TableCell>{point.address || '-'}</TableCell>
                 <TableCell>
@@ -195,22 +266,24 @@ const DeliveryPoints = () => {
             <Typography variant="body1" gutterBottom>
               Category: {currentPoint?.category}
             </Typography>
+            <Typography variant="body2" color="textSecondary" gutterBottom>
+              {currentPoint && getCategoryTruckInfo(currentPoint.category)}
+            </Typography>
             <TextField
               autoFocus
               margin="dense"
               label="Pallets"
               type="number"
               fullWidth
-              variant="outlined"
               value={pallets}
               onChange={(e) => setPallets(e.target.value)}
-              InputProps={{ inputProps: { min: 0 } }}
+              inputProps={{ min: 0 }}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained">
+          <Button onClick={handleSave} variant="contained" color="primary">
             Save
           </Button>
         </DialogActions>

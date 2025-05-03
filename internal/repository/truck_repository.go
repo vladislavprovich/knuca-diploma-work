@@ -112,6 +112,12 @@ func (r *TruckRepository) GetNextTruckID(ctx context.Context) (int, error) {
 	return truck.ID + 1, nil
 }
 
+// Delete removes a truck from the database
+func (r *TruckRepository) Delete(ctx context.Context, id int) error {
+	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
 // InitializeFleet creates a default fleet of trucks if none exist
 func (r *TruckRepository) InitializeFleet(ctx context.Context) error {
 	// Check if trucks already exist

@@ -46,6 +46,15 @@ const Routes = () => {
   const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
   const [optimizeDate, setOptimizeDate] = useState(dayjs());
   const [optimizing, setOptimizing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteRouteDialogOpen, setDeleteRouteDialogOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState(null);
+  const [deletingRoute, setDeletingRoute] = useState(false);
+  const [editRouteDialogOpen, setEditRouteDialogOpen] = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
+  const [editedDeliveryPoints, setEditedDeliveryPoints] = useState([]);
+  const [editedPointPallets, setEditedPointPallets] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -54,8 +63,12 @@ const Routes = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch routes
-      const routesResponse = await axios.get('/api/routes');
+      // Clear existing data first
+      setRoutes([]);
+      
+      // Fetch routes with cache-busting parameter to prevent caching
+      const timestamp = new Date().getTime();
+      const routesResponse = await axios.get(`/api/routes?_t=${timestamp}`);
       setRoutes(routesResponse.data);
       
       // Fetch trucks for reference
@@ -75,6 +88,24 @@ const Routes = () => {
   const handleDetailsClick = (route) => {
     setCurrentRoute(route);
     setDetailsDialogOpen(true);
+  };
+  
+  // Helper function to get total pallets for a delivery point across all routes
+  const getTotalPalletsForPoint = (pointId) => {
+    let total = 0;
+    routes.forEach(route => {
+      if (route.point_pallets && route.point_pallets[pointId]) {
+        total += route.point_pallets[pointId];
+      }
+    });
+    return total;
+  };
+  
+  // Helper function to get all routes that deliver to a specific point
+  const getRoutesForPoint = (pointId) => {
+    return routes.filter(route => 
+      route.delivery_points.includes(pointId)
+    );
   };
 
   const handleCloseDetails = () => {
@@ -106,6 +137,127 @@ const Routes = () => {
     }
   };
 
+  const handleDeleteAllClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteAllRoutes = async () => {
+    setDeleting(true);
+    try {
+      await axios.delete('/api/routes');
+      fetchData(); // Refresh routes after deletion
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting routes:', error);
+      alert('Failed to delete routes. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteRouteClick = (route) => {
+    setRouteToDelete(route);
+    setDeleteRouteDialogOpen(true);
+  };
+
+  const handleCloseDeleteRouteDialog = () => {
+    setDeleteRouteDialogOpen(false);
+    setRouteToDelete(null);
+  };
+
+  const handleDeleteRoute = async () => {
+    if (!routeToDelete) return;
+    
+    setDeletingRoute(true);
+    try {
+      // Make sure we're using the correct ID format
+      const routeId = routeToDelete.id;
+      console.log('Deleting route with ID:', routeId);
+      await axios.delete(`/api/routes/${routeId}`);
+      
+      // Force a complete refresh of data after deletion
+      await fetchData();
+      setDeleteRouteDialogOpen(false);
+      setRouteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting route:', error);
+      alert('Failed to delete route. Please try again.');
+    } finally {
+      setDeletingRoute(false);
+    }
+  };
+  
+  const handleEditRouteClick = (route) => {
+    setEditingRoute(route);
+    
+    // Initialize edited delivery points with the current route's delivery points
+    const points = route.delivery_points.map(pointId => {
+      return getDeliveryPointById(pointId);
+    }).filter(point => point.id); // Filter out any undefined points
+    
+    setEditedDeliveryPoints(points);
+    
+    // Initialize edited point pallets with the current route's point pallets or default to the point's pallets
+    const pallets = {};
+    points.forEach(point => {
+      pallets[point.id] = route.point_pallets && route.point_pallets[point.id] ? 
+        route.point_pallets[point.id] : point.pallets;
+    });
+    
+    setEditedPointPallets(pallets);
+    setEditRouteDialogOpen(true);
+  };
+
+  const handleCloseEditRoute = () => {
+    setEditRouteDialogOpen(false);
+    setEditingRoute(null);
+    setEditedDeliveryPoints([]);
+    setEditedPointPallets({});
+  };
+
+  const handleUpdatePallets = (pointId, value) => {
+    setEditedPointPallets(prev => ({
+      ...prev,
+      [pointId]: parseInt(value, 10)
+    }));
+  };
+
+  const handleSaveRoute = async () => {
+    if (!editingRoute) return;
+    
+    try {
+      // Create updated route object
+      const updatedRoute = {
+        ...editingRoute,
+        delivery_points: editedDeliveryPoints.map(p => p.id),
+        point_pallets: editedPointPallets
+      };
+      
+      // Calculate total pallets to ensure they don't exceed truck capacity
+      const truck = getTruckById(updatedRoute.truck_id);
+      const totalPallets = Object.values(editedPointPallets).reduce((sum, pallets) => sum + pallets, 0);
+      
+      if (totalPallets > truck.capacity) {
+        alert(`Total pallets (${totalPallets}) exceed truck capacity (${truck.capacity})`);
+        return;
+      }
+      
+      // Send update request
+      await axios.put(`/api/routes/${editingRoute.id}`, updatedRoute);
+      
+      // Refresh routes after update
+      fetchData();
+      handleCloseEditRoute();
+    } catch (error) {
+      console.error('Error updating route:', error);
+      alert('Failed to update route. Please try again.');
+    }
+  };
+
   const getTruckById = (id) => {
     return trucks.find(truck => truck.id === id) || {};
   };
@@ -128,8 +280,23 @@ const Routes = () => {
         return 'default';
     }
   };
+  
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'Blue':
+        return 'primary';
+      case 'Green':
+        return 'success';
+      case 'Yellow':
+        return 'warning';
+      case 'Red':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
 
-  const filteredRoutes = routes.filter((route) => {
+  const filteredRoutes = routes ? routes.filter((route) => {
     const matchesSearch = filter === '' || 
       route.id.toString().includes(filter) || 
       getTruckById(route.truck_id).license_plate?.toLowerCase().includes(filter.toLowerCase());
@@ -140,7 +307,7 @@ const Routes = () => {
       dayjs(route.delivery_date).format('YYYY-MM-DD') === dateFilter.format('YYYY-MM-DD');
     
     return matchesSearch && matchesStatus && matchesDate;
-  });
+  }) : [];
 
   if (loading) {
     return (
@@ -270,13 +437,33 @@ const Routes = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <Button 
-                      variant="contained" 
-                      size="small" 
-                      onClick={() => handleDetailsClick(route)}
-                    >
-                      Details
-                    </Button>
+                    <Box>
+                      <Button 
+                        variant="contained" 
+                        size="small" 
+                        onClick={() => handleDetailsClick(route)}
+                        sx={{ mr: 1, mb: { xs: 1, sm: 0 } }}
+                      >
+                        Details
+                      </Button>
+                      <Button 
+                        variant="contained" 
+                        color="primary"
+                        size="small" 
+                        onClick={() => handleEditRouteClick(route)}
+                        sx={{ mr: 1, mb: { xs: 1, sm: 0 } }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="contained" 
+                        color="error"
+                        size="small" 
+                        onClick={() => handleDeleteRouteClick(route)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               );
@@ -345,6 +532,12 @@ const Routes = () => {
                 <List>
                   {currentRoute.delivery_points.map((pointId, index) => {
                     const point = getDeliveryPointById(pointId);
+                    const palletsInThisRoute = currentRoute.point_pallets && currentRoute.point_pallets[pointId] ? currentRoute.point_pallets[pointId] : 0;
+                    const totalPalletsForPoint = getTotalPalletsForPoint(pointId);
+                    const totalPointPallets = point.pallets || 0;
+                    const routesForThisPoint = getRoutesForPoint(pointId);
+                    const isMultipleDeliveries = routesForThisPoint.length > 1;
+                    
                     return (
                       <React.Fragment key={pointId}>
                         {index > 0 && <Divider />}
@@ -354,8 +547,17 @@ const Routes = () => {
                             secondary={
                               <>
                                 <Typography component="span" variant="body2">
-                                  ID: {point.id} | Category: {point.category} | Pallets: {point.pallets}
+                                  ID: {point.id} | Category: {point.category}
                                 </Typography>
+                                <br />
+                                <Typography component="span" variant="body2">
+                                  Pallets in this route: {palletsInThisRoute} | Total pallets assigned: {totalPalletsForPoint} | Original point pallets: {totalPointPallets}
+                                </Typography>
+                                {isMultipleDeliveries && (
+                                  <Typography component="span" variant="body2" color="primary">
+                                    <br />This point is serviced by {routesForThisPoint.length} different routes
+                                  </Typography>
+                                )}
                               </>
                             }
                           />
@@ -408,104 +610,181 @@ const Routes = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Delete All Routes Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>Delete All Routes</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete all routes? This action cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteAllRoutes} 
+            variant="contained" 
+            color="error"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete All'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Single Route Confirmation Dialog */}
+      <Dialog open={deleteRouteDialogOpen} onClose={handleCloseDeleteRouteDialog}>
+        <DialogTitle>Delete Route</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete route {routeToDelete?.id}? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteRouteDialog}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteRoute} 
+            variant="contained" 
+            color="error"
+            disabled={deletingRoute}
+          >
+            {deletingRoute ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Edit Route Dialog */}
+      <Dialog 
+        open={editRouteDialogOpen} 
+        onClose={handleCloseEditRoute}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Edit Route #{editingRoute?.id}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Truck Information
+            </Typography>
+            {editingRoute && (() => {
+              const truck = getTruckById(editingRoute.truck_id);
+              const totalPallets = Object.values(editedPointPallets).reduce((sum, pallets) => sum + pallets, 0);
+              const remainingCapacity = truck.capacity - totalPallets;
+              
+              return (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="body2" color="textSecondary">Truck ID</Typography>
+                    <Typography variant="body1">{truck.id}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="body2" color="textSecondary">License Plate</Typography>
+                    <Typography variant="body1">{truck.license_plate}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="body2" color="textSecondary">Capacity</Typography>
+                    <Typography variant="body1">{truck.capacity} pallets</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="body2" color="textSecondary">Remaining Capacity</Typography>
+                    <Typography 
+                      variant="body1" 
+                      color={remainingCapacity < 0 ? 'error' : 'inherit'}
+                    >
+                      {remainingCapacity} pallets
+                    </Typography>
+                  </Grid>
+                </Grid>
+              );
+            })()}
+            
+            <Typography variant="h6" gutterBottom>
+              Delivery Points
+            </Typography>
+            <TableContainer component={Paper} sx={{ mb: 3 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Pallets</TableCell>
+                    <TableCell>Compatible</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {editingRoute && editedDeliveryPoints.map((point) => {
+                    const truck = getTruckById(editingRoute.truck_id);
+                    const isCompatible = point.category === 'Blue' ? 
+                      (truck.capacity === 33 || truck.capacity === 18) :
+                      point.category === 'Green' ? 
+                        (truck.capacity <= 18) :
+                        point.category === 'Yellow' ? 
+                          (truck.capacity <= 15) :
+                          (truck.capacity <= 10);
+                    
+                    return (
+                      <TableRow key={point.id}>
+                        <TableCell>{point.id}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={point.category} 
+                            color={getCategoryColor(point.category)} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={editedPointPallets[point.id] || 0}
+                            onChange={(e) => handleUpdatePallets(point.id, e.target.value)}
+                            inputProps={{ min: 1, style: { width: '60px' } }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {isCompatible ? 
+                            <Chip label="Compatible" color="success" size="small" /> : 
+                            <Chip label="Not Compatible" color="error" size="small" />}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {editingRoute && (() => {
+              const truck = getTruckById(editingRoute.truck_id);
+              const totalPallets = Object.values(editedPointPallets).reduce((sum, pallets) => sum + pallets, 0);
+              const remainingCapacity = truck.capacity - totalPallets;
+              
+              return remainingCapacity < 0 && (
+                <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+                  Warning: Total pallets exceed truck capacity by {Math.abs(remainingCapacity)} pallets.
+                </Typography>
+              );
+            })()}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditRoute}>Cancel</Button>
+          <Button 
+            onClick={handleSaveRoute} 
+            variant="contained" 
+            color="primary"
+            disabled={editingRoute && (() => {
+              const truck = getTruckById(editingRoute.truck_id);
+              const totalPallets = Object.values(editedPointPallets).reduce((sum, pallets) => sum + pallets, 0);
+              return truck.capacity - totalPallets < 0;
+            })()}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
 export default Routes;
-
-// Add these state variables and functions to the component
-const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-const [deleting, setDeleting] = useState(false);
-
-const handleDeleteAllClick = () => {
-  setDeleteDialogOpen(true);
-};
-
-const handleCloseDeleteDialog = () => {
-  setDeleteDialogOpen(false);
-};
-
-const handleDeleteAllRoutes = async () => {
-  setDeleting(true);
-  try {
-    await axios.delete('/api/routes');
-    fetchData(); // Refresh routes after deletion
-    setDeleteDialogOpen(false);
-  } catch (error) {
-    console.error('Error deleting routes:', error);
-    alert('Failed to delete routes. Please try again.');
-  } finally {
-    setDeleting(false);
-  }
-};
-
-{/* Delete All Routes Confirmation Dialog */}
-<Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-  <DialogTitle>Delete All Routes</DialogTitle>
-  <DialogContent>
-    <Typography>Are you sure you want to delete all routes? This action cannot be undone.</Typography>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-    <Button 
-      onClick={handleDeleteAllRoutes} 
-      variant="contained" 
-      color="error"
-      disabled={deleting}
-    >
-      {deleting ? 'Deleting...' : 'Delete All'}
-    </Button>
-  </DialogActions>
-</Dialog>
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
-{/* Delete All Routes Confirmation Dialog */}
 {/* Delete All Routes Confirmation Dialog */}
 {/* Delete All Routes Confirmation Dialog */}
 {/* Delete All Routes Confirmation Dialog */}

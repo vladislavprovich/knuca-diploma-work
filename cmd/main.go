@@ -6,7 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -24,6 +27,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using default environment variables")
 	}
+
+	// Skip React build check as requested by user
+	log.Println("Skipping React build check, using existing frontend files")
 
 	// Get MongoDB connection details from environment variables
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
@@ -59,6 +65,18 @@ func main() {
 	router.StaticFile("/", "./web/build/index.html")
 	router.StaticFile("/favicon.ico", "./web/build/favicon.ico")
 
+	// Handle React router paths - serve index.html for all client-side routes
+	router.NoRoute(func(c *gin.Context) {
+		// Check if the request is for an API endpoint
+		if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+			return
+		}
+
+		// For all other routes, serve the React app's index.html
+		c.File("./web/build/index.html")
+	})
+
 	// Initialize API handlers
 	api := router.Group("/api")
 	{
@@ -71,13 +89,16 @@ func main() {
 		api.GET("/trucks", handleGetAllTrucks(truckRepo))
 		api.GET("/trucks/:id", handleGetTruckByID(truckRepo))
 		api.POST("/trucks", handleCreateTruck(truckRepo))
+		api.DELETE("/trucks/:id", handleDeleteTruck(truckRepo))
 
 		// Route routes
 		api.GET("/routes", handleGetAllRoutes(routeRepo))
 		api.GET("/routes/:id", handleGetRouteByID(routeRepo))
 		api.POST("/routes/optimize", handleOptimizeRoutes(routeOptimizerService))
 		api.GET("/routes/date/:date", handleGetRoutesByDate(routeRepo))
-		api.DELETE("/routes", handleDeleteAllRoutes(routeRepo))
+		api.PUT("/routes/:id", handleUpdateRoute(routeOptimizerService))
+		api.DELETE("/routes", handleDeleteAllRoutes(routeOptimizerService))
+		api.DELETE("/routes/:id", handleDeleteRoute(routeOptimizerService))
 	}
 
 	// Start the server
@@ -282,6 +303,44 @@ func handleGetRoutesByDate(repo *repository.RouteRepository) gin.HandlerFunc {
 	}
 }
 
+// handleUpdateRoute handles updating an existing route
+func handleUpdateRoute(service *service.RouteOptimizerService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get route ID from URL parameter
+		id := c.Param("id")
+		routeID := 0
+		if _, err := fmt.Sscanf(id, "%d", &routeID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+			return
+		}
+
+		// Bind JSON request body to Route struct
+		var route models.Route
+		if err := c.ShouldBindJSON(&route); err != nil {
+			log.Printf("Error binding JSON in route update: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format: " + err.Error()})
+			return
+		}
+
+		// Ensure the route ID in the URL matches the one in the request body
+		if route.ID != routeID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Route ID in URL does not match ID in request body"})
+			return
+		}
+
+		// Update the route using the service
+		log.Printf("Updating route %d", routeID)
+		if err := service.UpdateRoute(c.Request.Context(), &route); err != nil {
+			log.Printf("Error updating route: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update route: " + err.Error()})
+			return
+		}
+
+		// Return the updated route
+		c.JSON(http.StatusOK, route)
+	}
+}
+
 func handleOptimizeRoutes(service *service.RouteOptimizerService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request struct {
@@ -289,25 +348,60 @@ func handleOptimizeRoutes(service *service.RouteOptimizerService) gin.HandlerFun
 		}
 
 		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			log.Printf("Error binding JSON in route optimization: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format: " + err.Error()})
+			return
+		}
+
+		if request.DeliveryDate == "" {
+			log.Println("Error: Empty delivery date provided")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Delivery date is required"})
 			return
 		}
 
 		date, err := time.Parse("2006-01-02", request.DeliveryDate)
 		if err != nil {
+			log.Printf("Error parsing date '%s': %v", request.DeliveryDate, err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format, use YYYY-MM-DD"})
 			return
 		}
 
+		log.Printf("Optimizing routes for date: %s", date.Format("2006-01-02"))
 		routes, err := service.OptimizeRoutes(c.Request.Context(), date)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("Error optimizing routes: %v", err)
+
+			// Check for specific error messages and provide more helpful responses
+			if strings.Contains(err.Error(), "no suitable trucks available") ||
+				strings.Contains(err.Error(), "no trucks available") {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "No suitable trucks available for delivery. Please ensure trucks are available and properly configured.",
+					"details": err.Error(),
+				})
+				return
+			}
+
+			if strings.Contains(err.Error(), "no delivery points with pallets") {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "No delivery points with pallets found. Please add pallets to delivery points before optimizing routes.",
+					"details": err.Error(),
+				})
+				return
+			}
+
+			// Generic error response
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to optimize routes",
+				"details": err.Error(),
+			})
 			return
 		}
 
+		log.Printf("Successfully optimized %d routes, now saving", len(routes))
 		// Save the optimized routes
 		if err := service.SaveRoutes(c.Request.Context(), routes); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("Error saving optimized routes: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save routes: " + err.Error()})
 			return
 		}
 
@@ -315,9 +409,9 @@ func handleOptimizeRoutes(service *service.RouteOptimizerService) gin.HandlerFun
 	}
 }
 
-func handleDeleteAllRoutes(repo *repository.RouteRepository) gin.HandlerFunc {
+func handleDeleteAllRoutes(service *service.RouteOptimizerService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := repo.DeleteAll(c.Request.Context())
+		err := service.DeleteAllRoutes(c.Request.Context())
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -365,4 +459,90 @@ func handleCreateTruck(repo *repository.TruckRepository) gin.HandlerFunc {
 
 		c.JSON(http.StatusCreated, truck)
 	}
+}
+
+func handleDeleteTruck(repo *repository.TruckRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		truckID := 0
+		if _, err := fmt.Sscanf(id, "%d", &truckID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+			return
+		}
+
+		// Check if truck exists
+		_, err := repo.GetByID(c.Request.Context(), truckID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Delete the truck
+		if err := repo.Delete(c.Request.Context(), truckID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Truck deleted successfully"})
+	}
+}
+
+// handleDeleteRoute handles the deletion of a specific route
+func handleDeleteRoute(service *service.RouteOptimizerService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		routeID := 0
+		if _, err := fmt.Sscanf(id, "%d", &routeID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+			return
+		}
+
+		if err := service.DeleteRoute(c.Request.Context(), routeID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Route deleted successfully"})
+	}
+}
+
+// ensureReactBuild checks if the React build exists and builds it if needed
+func ensureReactBuild() error {
+	// Check if build directory exists
+	buildDir := "./web/build"
+	if _, err := os.Stat(buildDir); os.IsNotExist(err) {
+		log.Println("React build not found, building React app...")
+		return buildReactApp()
+	} else if err != nil {
+		return fmt.Errorf("failed to check React build directory: %w", err)
+	}
+
+	// Check if index.html exists in build directory
+	indexPath := filepath.Join(buildDir, "index.html")
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		log.Println("React build incomplete, rebuilding React app...")
+		return buildReactApp()
+	} else if err != nil {
+		return fmt.Errorf("failed to check React build index.html: %w", err)
+	}
+
+	log.Println("React build found, using existing build")
+	return nil
+}
+
+// buildReactApp builds the React app using npm
+func buildReactApp() error {
+	log.Println("Building React app...")
+
+	// Change to web directory
+	cmd := exec.Command("cmd", "/c", "cd web && npm run build")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to build React app: %w", err)
+	}
+
+	log.Println("React app built successfully")
+	return nil
 }

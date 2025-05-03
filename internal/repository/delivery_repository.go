@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -100,25 +101,36 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 	points := make([]interface{}, 40)
 	categories := []string{"Blue", "Green", "Yellow", "Purple"}
 
+	// Create a base distance matrix for consistent distances
+	distanceMatrix := make(map[int]map[int]int)
+
+	// First, generate random distances between all points
+	for i := 1001; i <= 1040; i++ {
+		distanceMatrix[i] = make(map[int]int)
+		for j := 1001; j <= 1040; j++ {
+			if i != j { // No distance to itself
+				// Generate a random distance between 25 and 100 km
+				// Using a formula that ensures the distance is symmetric (same in both directions)
+				// We use the sum of IDs as a seed to ensure symmetry
+				seed := i + j
+				distance := 25 + (seed % 76) // 25 + random value between 0 and 75
+				distanceMatrix[i][j] = distance
+			}
+		}
+	}
+
 	for i := 0; i < 40; i++ {
 		id := 1001 + i
 		category := categories[i%4] // Distribute categories evenly
 
 		// Create a delivery point with random distances to other points
 		point := &models.DeliveryPoint{
-			ID:        id,
-			Category:  category,
-			Pallets:   0, // Will be set by user
-			Distances: make(map[int]int),
-		}
-
-		// Generate random distances to other delivery points (1-100 km)
-		for j := 1001; j < 1001+40; j++ {
-			if j != id { // No distance to itself
-				// Random distance between 1 and 100 km
-				distance := 1 + (j*id)%100
-				point.Distances[j] = distance
-			}
+			ID:          id,
+			Category:    category,
+			Pallets:     0, // Will be set by user
+			Distances:   distanceMatrix[id],
+			Description: fmt.Sprintf("Delivery Point %d", id),
+			Address:     fmt.Sprintf("Address %d, Street %d", id-1000, (id-1000)%10),
 		}
 
 		points[i] = point

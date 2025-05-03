@@ -15,3 +15,11 @@ tasks:
       - echo "Formatting code..."
       - gofmt -w .
     silent: false
+
+  start_docker:
+    desc: "Start the local LogisticProject service"
+    cmds:
+      - echo "Starting local LogisticProject service..."
+      - docker compose up
+    ignore_error: true
+    silent: false

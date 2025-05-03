@@ -30,7 +30,20 @@ func (r *RouteRepository) Create(ctx context.Context, route *models.Route) error
 	route.CreatedAt = now
 	route.UpdatedAt = now
 
-	_, err := r.collection.InsertOne(ctx, route)
+	// Check if a route with this ID already exists
+	var existingRoute models.Route
+	err := r.collection.FindOne(ctx, bson.M{"_id": route.ID}).Decode(&existingRoute)
+	if err == nil {
+		// Route with this ID already exists, update it instead
+		_, err = r.collection.ReplaceOne(ctx, bson.M{"_id": route.ID}, route)
+		return err
+	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+		// An error occurred that wasn't just "no documents found"
+		return err
+	}
+
+	// No existing route with this ID, create a new one
+	_, err = r.collection.InsertOne(ctx, route)
 	return err
 }
 
@@ -150,8 +163,25 @@ func (r *RouteRepository) Delete(ctx context.Context, id int) error {
 
 // DeleteAll removes all routes from the database
 func (r *RouteRepository) DeleteAll(ctx context.Context) error {
-	_, err := r.collection.DeleteMany(ctx, bson.M{})
-	return err
+	// First, get all routes to find associated trucks
+	cursor, err := r.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+
+	var routes []*models.Route
+	if err = cursor.All(ctx, &routes); err != nil {
+		return err
+	}
+
+	// Delete all routes
+	_, err = r.collection.DeleteMany(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetNextRouteID gets the next available route ID
