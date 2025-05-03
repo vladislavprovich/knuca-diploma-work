@@ -22,6 +22,7 @@ import {
   Settings as OptimizerIcon,
   Assessment as ReportsIcon,
   Menu as MenuIcon,
+  Map as MapIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -85,6 +86,7 @@ const Layout = ({ children }) => {
     { text: 'Routes', icon: <RoutesIcon />, path: '/routes' },
     { text: 'Route Optimizer', icon: <OptimizerIcon />, path: '/route-optimizer' },
     { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
+    { text: 'Map', icon: <MapIcon />, path: '/map' },
   ];
 
   return (

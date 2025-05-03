@@ -8,6 +8,8 @@ type DeliveryPoint struct {
 	Distances   map[int]int `json:"distances" bson:"distances"` // Map of distances to other delivery points
 	Description string      `json:"description" bson:"description,omitempty"`
 	Address     string      `json:"address" bson:"address,omitempty"`
+	Latitude    float64     `json:"latitude" bson:"latitude,omitempty"`
+	Longitude   float64     `json:"longitude" bson:"longitude,omitempty"`
 }
 
 // CategoryPalletCapacity maps delivery point categories to their maximum pallet capacity

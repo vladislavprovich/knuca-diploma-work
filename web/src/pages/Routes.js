@@ -69,7 +69,11 @@ const Routes = () => {
       // Fetch routes with cache-busting parameter to prevent caching
       const timestamp = new Date().getTime();
       const routesResponse = await axios.get(`/api/routes?_t=${timestamp}`);
-      setRoutes(routesResponse.data);
+      
+      // Ensure we have an array of routes
+      const routesData = Array.isArray(routesResponse.data) ? routesResponse.data : [];
+      console.log(`Fetched ${routesData.length} routes from API`);
+      setRoutes(routesData);
       
       // Fetch trucks for reference
       const trucksResponse = await axios.get('/api/trucks');
@@ -127,11 +131,14 @@ const Routes = () => {
         delivery_date: optimizeDate.format('YYYY-MM-DD')
       });
       
+      console.log(`Optimization successful. Generated ${response.data.length} routes.`);
+      
       // Refresh routes after optimization
-      fetchData();
+      await fetchData();
       setOptimizeDialogOpen(false);
     } catch (error) {
       console.error('Error optimizing routes:', error);
+      alert('Failed to optimize routes. Please try again.');
     } finally {
       setOptimizing(false);
     }

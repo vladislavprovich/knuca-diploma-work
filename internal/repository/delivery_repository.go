@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
+
 	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -85,7 +85,7 @@ func (r *DeliveryPointRepository) Delete(ctx context.Context, id int) error {
 	return err
 }
 
-// GenerateRandomDeliveryPoints creates 40 delivery points with random distances
+// GenerateRandomDeliveryPoints creates delivery points with real Kyiv locations and accurate distances
 func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Context) error {
 	// Check if delivery points already exist
 	count, err := r.collection.CountDocuments(ctx, bson.M{})
@@ -97,40 +97,27 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 		return nil // Delivery points already exist
 	}
 
-	// Generate 40 delivery points with IDs from 1001 to 1040
-	points := make([]interface{}, 40)
-	categories := []string{"Blue", "Green", "Yellow", "Purple"}
+	// Get real Kyiv locations
+	kyivLocations := GetKyivLocations()
 
-	// Create a base distance matrix for consistent distances
-	distanceMatrix := make(map[int]map[int]int)
+	// Calculate real distances between locations
+	distanceMatrix := CalculateRealDistances(kyivLocations)
 
-	// First, generate random distances between all points
-	for i := 1001; i <= 1040; i++ {
-		distanceMatrix[i] = make(map[int]int)
-		for j := 1001; j <= 1040; j++ {
-			if i != j { // No distance to itself
-				// Generate a random distance between 25 and 100 km
-				// Using a formula that ensures the distance is symmetric (same in both directions)
-				// We use the sum of IDs as a seed to ensure symmetry
-				seed := i + j
-				distance := 25 + (seed % 76) // 25 + random value between 0 and 75
-				distanceMatrix[i][j] = distance
-			}
-		}
-	}
+	// Create points from Kyiv locations
+	points := make([]interface{}, len(kyivLocations))
 
-	for i := 0; i < 40; i++ {
+	for i, location := range kyivLocations {
 		id := 1001 + i
-		category := categories[i%4] // Distribute categories evenly
 
-		// Create a delivery point with random distances to other points
 		point := &models.DeliveryPoint{
 			ID:          id,
-			Category:    category,
+			Category:    location.Category,
 			Pallets:     0, // Will be set by user
 			Distances:   distanceMatrix[id],
-			Description: fmt.Sprintf("Delivery Point %d", id),
-			Address:     fmt.Sprintf("Address %d, Street %d", id-1000, (id-1000)%10),
+			Description: location.Name,
+			Address:     location.Address,
+			Latitude:    location.Latitude,
+			Longitude:   location.Longitude,
 		}
 
 		points[i] = point
@@ -139,4 +126,12 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 	// Insert all delivery points in a single batch operation
 	_, err = r.collection.InsertMany(ctx, points)
 	return err
+}
+
+// abs returns the absolute value of an integer
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

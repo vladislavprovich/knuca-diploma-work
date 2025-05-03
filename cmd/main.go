@@ -108,21 +108,30 @@ func main() {
 		Handler: router,
 	}
 
-	log.Printf("Server starting on port %s...", port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-
-	// Graceful shutdown.
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	sign := <-stop
-	log.Printf("Received shutdown signal: %s", sign)
-	defer func() {
-		err = server.Shutdown(ctx)
+	// Start the server in a goroutine so that it doesn't block the graceful shutdown handling
+	go func() {
+		log.Printf("Server starting on port %s...", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
 	}()
 
-	log.Print("Server shutdown complete")
+	// Wait for interrupt signal to gracefully shutdown the server
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+	log.Println("Shutting down server...")
+
+	// Create a deadline to wait for current operations to complete
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Shutdown the server
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited properly")
 }
 
 // getEnv gets an environment variable or returns a default value
