@@ -106,8 +106,23 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 	// Create points from Kyiv locations
 	points := make([]interface{}, len(kyivLocations))
 
-	for i, location := range kyivLocations {
-		id := 1001 + i
+	// First, add the warehouse (ID 1000)
+	warehouse := kyivLocations[0] // Warehouse is the first location
+	points[0] = &models.DeliveryPoint{
+		ID:          1000,
+		Category:    warehouse.Category,
+		Pallets:     0,
+		Distances:   distanceMatrix[1000],
+		Description: warehouse.Name,
+		Address:     warehouse.Address,
+		Latitude:    warehouse.Latitude,
+		Longitude:   warehouse.Longitude,
+	}
+
+	// Then add all delivery points
+	for i := 1; i < len(kyivLocations); i++ {
+		location := kyivLocations[i]
+		id := 1000 + i
 
 		point := &models.DeliveryPoint{
 			ID:          id,

@@ -40,10 +40,16 @@ func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) in
 
 	totalDistance := 0
 
-	// If we have a valid start point different from the first delivery point
-	if r.StartPoint > 0 && r.StartPoint != r.DeliveryPoints[0] {
-		// Calculate distance from start point to first delivery point
-		if startPoint, exists := deliveryPoints[r.StartPoint]; exists {
+	// Set warehouse as default start point if not specified
+	warehouseID := 1000 // Vyshneve warehouse ID
+	startPointID := r.StartPoint
+	if startPointID == 0 {
+		startPointID = warehouseID
+	}
+
+	// Calculate distance from start point (warehouse) to first delivery point
+	if startPointID != r.DeliveryPoints[0] {
+		if startPoint, exists := deliveryPoints[startPointID]; exists {
 			if firstPoint, exists := deliveryPoints[r.DeliveryPoints[0]]; exists {
 				if distance, exists := startPoint.Distances[firstPoint.ID]; exists {
 					totalDistance += distance
@@ -60,6 +66,18 @@ func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) in
 		if currentPoint, exists := deliveryPoints[currentPointID]; exists {
 			if distance, exists := currentPoint.Distances[nextPointID]; exists {
 				totalDistance += distance
+			}
+		}
+	}
+
+	// Calculate return distance from last delivery point back to warehouse
+	if len(r.DeliveryPoints) > 0 {
+		lastPointID := r.DeliveryPoints[len(r.DeliveryPoints)-1]
+		if lastPointID != warehouseID {
+			if lastPoint, exists := deliveryPoints[lastPointID]; exists {
+				if distance, exists := lastPoint.Distances[warehouseID]; exists {
+					totalDistance += distance
+				}
 			}
 		}
 	}

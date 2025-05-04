@@ -73,6 +73,11 @@ func main() {
 			return
 		}
 
+		// Add cache control headers for all client-side routes
+		c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Writer.Header().Set("Pragma", "no-cache")
+		c.Writer.Header().Set("Expires", "0")
+
 		// For all other routes, serve the React app's index.html
 		c.File("./web/build/index.html")
 	})
@@ -149,6 +154,16 @@ func corsMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Add cache control headers to prevent 304 responses for static files
+		if strings.HasPrefix(c.Request.URL.Path, "/static/") ||
+			c.Request.URL.Path == "/" ||
+			c.Request.URL.Path == "/favicon.ico" ||
+			c.Request.URL.Path == "/manifest.json" {
+			c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			c.Writer.Header().Set("Pragma", "no-cache")
+			c.Writer.Header().Set("Expires", "0")
+		}
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)

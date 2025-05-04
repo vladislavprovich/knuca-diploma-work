@@ -11,6 +11,20 @@ type KyivLocation struct {
 
 // GetKyivLocations returns a list of real locations in Kyiv for delivery points
 func GetKyivLocations() []KyivLocation {
+	return append([]KyivLocation{
+		// Warehouse in Vyshneve (starting point for all routes)
+		{
+			Name:      "Central Warehouse",
+			Address:   "Vyshneve, Kyiv Region, Ukraine",
+			Latitude:  50.3833,
+			Longitude: 30.3667,
+			Category:  "Warehouse",
+		},
+	}, getDeliveryLocations()...)
+}
+
+// getDeliveryLocations returns the actual delivery locations
+func getDeliveryLocations() []KyivLocation {
 	return []KyivLocation{
 		// Blue category locations (large supermarkets and distribution centers)
 		{
@@ -304,26 +318,45 @@ func GetKyivLocations() []KyivLocation {
 
 // CalculateRealDistances calculates the real distances between Kyiv locations in kilometers
 // This uses the Haversine formula to calculate the distance between two points on the Earth's surface
+// The warehouse (first location) is treated as the starting point (ID 1000)
 func CalculateRealDistances(locations []KyivLocation) map[int]map[int]int {
 	distanceMatrix := make(map[int]map[int]int)
 
 	// Initialize the distance matrix
-	for i := 0; i < len(locations); i++ {
-		id := 1001 + i // Starting ID from 1001
+	// Warehouse has ID 1000
+	distanceMatrix[1000] = make(map[int]int)
+
+	// Delivery points start from ID 1001
+	for i := 1; i < len(locations); i++ {
+		id := 1000 + i // Starting ID from 1001 for delivery points
 		distanceMatrix[id] = make(map[int]int)
 	}
 
-	// Calculate distances between all pairs of locations
-	for i := 0; i < len(locations); i++ {
-		id1 := 1001 + i
+	// Calculate distances from warehouse to all delivery points
+	warehouse := locations[0] // Warehouse is the first location
+	for i := 1; i < len(locations); i++ {
+		id := 1000 + i
+		location := locations[i]
+
+		// Calculate distance using Haversine formula
+		distance := calculateHaversineDistance(warehouse.Latitude, warehouse.Longitude, location.Latitude, location.Longitude)
+
+		// Round to nearest kilometer and store in the matrix
+		distanceMatrix[1000][id] = int(distance + 0.5)
+		distanceMatrix[id][1000] = int(distance + 0.5) // Also store the reverse distance
+	}
+
+	// Calculate distances between all pairs of delivery points
+	for i := 1; i < len(locations); i++ {
+		id1 := 1000 + i
 		loc1 := locations[i]
 
-		for j := 0; j < len(locations); j++ {
+		for j := 1; j < len(locations); j++ {
 			if i == j {
 				continue // Skip distance to self
 			}
 
-			id2 := 1001 + j
+			id2 := 1000 + j
 			loc2 := locations[j]
 
 			// Calculate distance using Haversine formula

@@ -1,21 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress,
-  Chip,
-  Button,
-  Alert,
-} from '@mui/material';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import React, { useState, useEffect } from 'react';
+import { Box } from '@mui/material';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
+import './Map.css';
 import L from 'leaflet';
 
 // MapController component to handle map view updates
@@ -23,7 +10,9 @@ const MapController = ({ center, zoom }) => {
   const map = useMap();
   
   useEffect(() => {
-    map.setView(center, zoom);
+    if (map) {
+      map.setView(center, zoom);
+    }
   }, [center, zoom, map]);
   
   return null;
@@ -39,6 +28,14 @@ L.Icon.Default.mergeOptions({
 
 // Custom marker icons for different categories
 const categoryIcons = {
+  Warehouse: new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [30, 45], // Slightly larger for warehouse
+    iconAnchor: [15, 45],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  }),
   Blue: new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -73,285 +70,169 @@ const categoryIcons = {
   }),
 };
 
-// Line colors for routes
-const routeColors = [
-  '#3388ff', // Blue
-  '#33a02c', // Green
-  '#ff7f00', // Orange
-  '#6a3d9a', // Purple
-  '#e31a1c', // Red
-  '#1f78b4', // Dark Blue
-  '#b15928', // Brown
-  '#a6cee3', // Light Blue
-  '#b2df8a', // Light Green
-  '#fb9a99', // Light Red
+// Static data for when API is not available
+const staticWarehouse = {
+  id: 1000,
+  category: 'Warehouse',
+  pallets: 0,
+  description: 'Central Warehouse',
+  address: 'Vyshneve, Kyiv Region, Ukraine',
+  latitude: 50.3833,
+  longitude: 30.3667
+};
+
+// Static delivery points data based on kyiv_locations.go
+const staticDeliveryPoints = [
+  staticWarehouse,
+  {
+    id: 1001,
+    category: 'Blue',
+    pallets: 20,
+    description: 'Metro Cash & Carry',
+    address: 'Kyiv, Troieshchyna, Bratyslavska St, 11',
+    latitude: 50.4869,
+    longitude: 30.6137
+  },
+  {
+    id: 1002,
+    category: 'Blue',
+    pallets: 25,
+    description: 'Epicenter K Hypermarket',
+    address: 'Kyiv, Berkovetska St, 6В',
+    latitude: 50.5101,
+    longitude: 30.3529
+  },
+  {
+    id: 1011,
+    category: 'Green',
+    pallets: 15,
+    description: 'Silpo Supermarket',
+    address: 'Kyiv, Khreshchatyk St, 44',
+    latitude: 50.4471,
+    longitude: 30.5255
+  },
+  {
+    id: 1012,
+    category: 'Green',
+    pallets: 12,
+    description: 'Novus Supermarket',
+    address: 'Kyiv, Druzhby Narodiv Blvd, 16A',
+    latitude: 50.4172,
+    longitude: 30.5344
+  },
+  {
+    id: 1021,
+    category: 'Yellow',
+    pallets: 8,
+    description: 'ATB Market',
+    address: 'Kyiv, Peremohy Ave, 47',
+    latitude: 50.4566,
+    longitude: 30.4456
+  },
+  {
+    id: 1022,
+    category: 'Yellow',
+    pallets: 10,
+    description: 'Fora Market',
+    address: 'Kyiv, Saksahanskoho St, 112',
+    latitude: 50.4372,
+    longitude: 30.5034
+  },
+  {
+    id: 1031,
+    category: 'Purple',
+    pallets: 5,
+    description: 'Minimarket Rukavychka',
+    address: 'Kyiv, Saksahanskoho St, 64',
+    latitude: 50.4372,
+    longitude: 30.5034
+  },
+  {
+    id: 1032,
+    category: 'Purple',
+    pallets: 4,
+    description: 'Convenience Store 24/7',
+    address: 'Kyiv, Khreshchatyk St, 15',
+    latitude: 50.4471,
+    longitude: 30.5255
+  }
 ];
 
-const Map = () => {
-  const [deliveryPoints, setDeliveryPoints] = useState([]);
-  const [routes, setRoutes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedRoute, setSelectedRoute] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [mapCenter, setMapCenter] = useState([50.45, 30.52]); // Default center (Kyiv)
-  const [mapZoom, setMapZoom] = useState(12);
+// Custom style for the map container - absolute positioning to fill the entire viewport
+const mapContainerStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  height: '100vh',
+  width: '100%',
+  backgroundColor: '#ffffff',
+  padding: 0,
+  margin: 0,
+  zIndex: 1000 // Ensure map is above other elements
+};
 
+// Custom style for the map wrapper - position relative to contain the absolute positioned map
+const mapWrapperStyle = {
+  position: 'relative',
+  height: '100vh',
+  width: '100%',
+  padding: 0,
+  margin: 0,
+  overflow: 'hidden',
+  backgroundColor: '#ffffff'
+};
+
+const Map = () => {
+  const [mapCenter] = useState([50.3833, 30.3667]); // Default center (Vyshneve warehouse)
+  const [mapZoom] = useState(10);
+  
+  // Force map to load properly by using useEffect
   useEffect(() => {
-    fetchData();
+    // This helps ensure the map container is properly sized when the component mounts
+    const mapContainer = document.querySelector('.leaflet-container');
+    if (mapContainer) {
+      window.dispatchEvent(new Event('resize'));
+    }
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Fetch delivery points
-      const pointsResponse = await axios.get('/api/delivery-points');
-      setDeliveryPoints(pointsResponse.data);
-      
-      // Fetch routes
-      const routesResponse = await axios.get('/api/routes');
-      setRoutes(routesResponse.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRouteChange = (event) => {
-    setSelectedRoute(event.target.value);
-    setSelectedCategory(''); // Clear category filter when route is selected
-    
-    // If a route is selected, center the map on the first point of the route
-    if (event.target.value) {
-      const route = routes.find(r => r.id.toString() === event.target.value);
-      if (route && route.delivery_points.length > 0) {
-        const firstPointId = route.delivery_points[0];
-        const point = deliveryPoints.find(p => p.id === firstPointId);
-        if (point && point.latitude && point.longitude) {
-          setMapCenter([point.latitude, point.longitude]);
-          setMapZoom(13); // Zoom in a bit
-        }
-      }
-    } else {
-      // Reset to default view
-      setMapCenter([50.45, 30.52]);
-      setMapZoom(12);
-    }
-  };
-
-  const handleCategoryChange = (event) => {
-    setSelectedCategory(event.target.value);
-    setSelectedRoute(''); // Clear route filter when category is selected
-    
-    // If a category is selected, adjust the map view to show all points of that category
-    if (event.target.value) {
-      const categoryPoints = deliveryPoints.filter(p => p.category === event.target.value);
-      if (categoryPoints.length > 0) {
-        // Find the average lat/lng to center the map
-        const avgLat = categoryPoints.reduce((sum, p) => sum + p.latitude, 0) / categoryPoints.length;
-        const avgLng = categoryPoints.reduce((sum, p) => sum + p.longitude, 0) / categoryPoints.length;
-        setMapCenter([avgLat, avgLng]);
-        setMapZoom(12); // Slightly zoomed out to see all points
-      }
-    } else {
-      // Reset to default view
-      setMapCenter([50.45, 30.52]);
-      setMapZoom(12);
-    }
-  };
-
-  const getFilteredPoints = () => {
-    if (selectedRoute) {
-      const route = routes.find(r => r.id.toString() === selectedRoute);
-      if (route) {
-        return deliveryPoints.filter(p => route.delivery_points.includes(p.id));
-      }
-      return [];
-    }
-    
-    if (selectedCategory) {
-      return deliveryPoints.filter(p => p.category === selectedCategory);
-    }
-    
-    return deliveryPoints;
-  };
-
-  const getRoutePolylines = () => {
-    if (!selectedRoute) return [];
-    
-    const route = routes.find(r => r.id.toString() === selectedRoute);
-    if (!route || !route.delivery_points || route.delivery_points.length < 2) return [];
-    
-    // Get all points in the route with their coordinates
-    const routePoints = route.delivery_points.map(pointId => {
-      const point = deliveryPoints.find(p => p.id === pointId);
-      return point ? [point.latitude, point.longitude] : null;
-    }).filter(point => point !== null);
-    
-    // Create a polyline for the route
-    return [{
-      positions: routePoints,
-      color: routeColors[route.id % routeColors.length],
-      id: route.id,
-      weight: 4,
-      opacity: 0.8,
-      dashArray: '10, 5' // Create a dashed line for better visibility
-    }];
-  };
-
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case 'Blue':
-        return 'primary';
-      case 'Green':
-        return 'success';
-      case 'Yellow':
-        return 'warning';
-      case 'Purple':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Delivery Map
-      </Typography>
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth>
-              <InputLabel id="route-select-label">Filter by Route</InputLabel>
-              <Select
-                labelId="route-select-label"
-                id="route-select"
-                value={selectedRoute}
-                label="Filter by Route"
-                onChange={handleRouteChange}
-              >
-                <MenuItem value="">All Routes</MenuItem>
-                {routes.map((route) => (
-                  <MenuItem key={route.id} value={route.id.toString()}>
-                    Route {route.id} ({new Date(route.delivery_date).toLocaleDateString()})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth>
-              <InputLabel id="category-select-label">Filter by Category</InputLabel>
-              <Select
-                labelId="category-select-label"
-                id="category-select"
-                value={selectedCategory}
-                label="Filter by Category"
-                onChange={handleCategoryChange}
-                disabled={!!selectedRoute}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                <MenuItem value="Blue">
-                  <Chip label="Blue" color="primary" size="small" sx={{ mr: 1 }} /> Blue (33-pallet)
-                </MenuItem>
-                <MenuItem value="Green">
-                  <Chip label="Green" color="success" size="small" sx={{ mr: 1 }} /> Green (18-pallet)
-                </MenuItem>
-                <MenuItem value="Yellow">
-                  <Chip label="Yellow" color="warning" size="small" sx={{ mr: 1 }} /> Yellow (15-pallet)
-                </MenuItem>
-                <MenuItem value="Purple">
-                  <Chip label="Purple" color="secondary" size="small" sx={{ mr: 1 }} /> Purple (10-pallet)
-                </MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Button 
-              variant="outlined" 
-              onClick={fetchData} 
-              fullWidth
-            >
-              Refresh Data
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-      
-      <Paper sx={{ height: '70vh', width: '100%', overflow: 'hidden' }}>
+    <Box sx={mapWrapperStyle} className="map-wrapper">
+      {/* Wrap MapContainer in a div to ensure it has a parent React component context */}
+      <div className="map-container-wrapper">
         <MapContainer 
           center={mapCenter} 
           zoom={mapZoom} 
-          style={{ height: '100%', width: '100%' }}
-          key={`${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`} // Add key to force re-render when center or zoom changes
+          style={mapContainerStyle}
+          zoomControl={true}
+          attributionControl={true}
+          className="map-container"
         >
           <MapController center={mapCenter} zoom={mapZoom} />
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            className="white-map-tiles"
           />
           
-          {getFilteredPoints().map((point) => (
+          {staticDeliveryPoints.map((point) => (
             <Marker 
-              key={point.id} 
+              key={`marker-${point.id}`} 
               position={[point.latitude, point.longitude]}
               icon={categoryIcons[point.category]}
             >
               <Popup>
                 <div>
-                  <Typography variant="subtitle1">
-                    <strong>{point.description}</strong>
-                  </Typography>
-                  <Typography variant="body2">
-                    Category: <Chip 
-                      label={point.category} 
-                      color={getCategoryColor(point.category)} 
-                      size="small" 
-                    />
-                  </Typography>
-                  <Typography variant="body2">Address: {point.address}</Typography>
-                  <Typography variant="body2">Pallets: {point.pallets}</Typography>
-                  <Typography variant="body2">
-                    Coordinates: {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
-                  </Typography>
+                  <strong>{point.description}</strong><br/>
+                  {point.address}<br/>
+                  {point.pallets > 0 ? `Pallets: ${point.pallets}` : 'Warehouse'}
                 </div>
               </Popup>
             </Marker>
           ))}
-          
-          {getRoutePolylines().map((line) => (
-            <Polyline 
-              key={`route-${line.id}`}
-              positions={line.positions} 
-              color={line.color} 
-              weight={line.weight || 4}
-              opacity={line.opacity || 0.7}
-              dashArray={line.dashArray}
-            />
-          ))}
         </MapContainer>
-      </Paper>
+      </div>
     </Box>
   );
 };
