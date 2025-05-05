@@ -2,9 +2,13 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"math"
+	"net/http"
 	"sort"
 	"time"
 
@@ -396,6 +400,16 @@ func (s *RouteOptimizerService) SaveRoutes(ctx context.Context, routes []*models
 			continue
 		}
 
+		// Calculate accurate road distances using OSRM API
+		if err := s.calculateRealRouteDistance(route, pointMap); err != nil {
+			log.Printf("Warning: Failed to calculate real route distance: %v. Using default distance calculation.", err)
+			// Fallback to the default distance calculation
+			route.CalculateTotalDistance(pointMap)
+		}
+
+		// Recalculate cost based on the updated distance
+		route.CalculateTotalCost(truck)
+
 		// Save the route as is without filtering delivery points
 		if err := s.RouteRepo.Create(ctx, route); err != nil {
 			log.Printf("Error creating route: %v", err)
@@ -443,8 +457,14 @@ func (s *RouteOptimizerService) UpdateRoute(ctx context.Context, route *models.R
 		return errors.New("invalid route: truck capacity does not match delivery point requirements")
 	}
 
-	// Recalculate distance and cost
-	route.CalculateTotalDistance(pointMap)
+	// Calculate accurate road distances using OSRM API
+	if err := s.calculateRealRouteDistance(route, pointMap); err != nil {
+		log.Printf("Warning: Failed to calculate real route distance: %v. Using default distance calculation.", err)
+		// Fallback to the default distance calculation
+		route.CalculateTotalDistance(pointMap)
+	}
+
+	// Recalculate cost based on the updated distance
 	route.CalculateTotalCost(truck)
 
 	// Update the route
@@ -480,6 +500,89 @@ func (s *RouteOptimizerService) DeleteRoute(ctx context.Context, routeID int) er
 		log.Printf("Warning: Failed to update truck %d availability: %v", truck.ID, err)
 	}
 
+	return nil
+}
+
+// calculateRealRouteDistance calculates the actual road distance for a route using the OSRM API
+func (s *RouteOptimizerService) calculateRealRouteDistance(route *models.Route, pointMap map[int]*models.DeliveryPoint) error {
+	if len(route.DeliveryPoints) == 0 {
+		route.TotalDistance = 0
+		return nil
+	}
+
+	// Set warehouse as default start point if not specified
+	warehouseID := 1000 // Vyshneve warehouse ID
+	startPointID := route.StartPoint
+	if startPointID == 0 {
+		startPointID = warehouseID
+	}
+
+	// Create an array of waypoints for the route
+	waypoints := make([][]float64, 0)
+
+	// Add start point (warehouse)
+	if startPoint, exists := pointMap[startPointID]; exists {
+		waypoints = append(waypoints, []float64{startPoint.Longitude, startPoint.Latitude})
+	}
+
+	// Add all delivery points in order
+	for _, pointID := range route.DeliveryPoints {
+		if point, exists := pointMap[pointID]; exists {
+			waypoints = append(waypoints, []float64{point.Longitude, point.Latitude})
+		}
+	}
+
+	// Add warehouse as ending point to complete the route
+	if warehouse, exists := pointMap[warehouseID]; exists && startPointID != warehouseID {
+		waypoints = append(waypoints, []float64{warehouse.Longitude, warehouse.Latitude})
+	}
+
+	// Calculate total real distance using OSRM API
+	totalRealDistance := 0.0
+
+	// Process route segments (OSRM has a limit on number of waypoints)
+	for i := 0; i < len(waypoints)-1; i++ {
+		start := waypoints[i]
+		end := waypoints[i+1]
+
+		// Use OSRM public API to get route between two points
+		url := fmt.Sprintf("https://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=false",
+			start[0], start[1], end[0], end[1])
+
+		resp, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		// Parse the JSON response
+		var result map[string]interface{}
+		if err := json.Unmarshal(body, &result); err != nil {
+			return err
+		}
+
+		// Extract the distance from the response
+		if routes, ok := result["routes"].([]interface{}); ok && len(routes) > 0 {
+			if route, ok := routes[0].(map[string]interface{}); ok {
+				if distance, ok := route["distance"].(float64); ok {
+					// Convert meters to kilometers and round to one decimal place
+					distanceKm := math.Round((distance/1000)*10) / 10
+					totalRealDistance += distanceKm
+				}
+			}
+		}
+
+		// Add a small delay to avoid rate limiting
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// Store the calculated distance in the route object (rounded to integer)
+	route.TotalDistance = int(math.Round(totalRealDistance))
 	return nil
 }
 

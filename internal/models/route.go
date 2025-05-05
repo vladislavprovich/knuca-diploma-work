@@ -32,61 +32,97 @@ var RouteStatus = struct {
 	Cancelled:  "Cancelled",
 }
 
-// CalculateTotalDistance computes the total distance of the route based on the delivery points
+// // CalculateTotalDistance computes the total distance of the route based on the delivery points
+// func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) int {
+// 	if len(r.DeliveryPoints) == 0 {
+// 		return 0
+// 	}
+
+// 	totalDistance := 0
+
+// 	// Set warehouse as default start point if not specified
+// 	warehouseID := 1000 // Vyshneve warehouse ID
+// 	startPointID := r.StartPoint
+// 	if startPointID == 0 {
+// 		startPointID = warehouseID
+// 	}
+
+// 	// Calculate distance from start point (warehouse) to first delivery point
+// 	if startPointID != r.DeliveryPoints[0] {
+// 		if startPoint, exists := deliveryPoints[startPointID]; exists {
+// 			if firstPoint, exists := deliveryPoints[r.DeliveryPoints[0]]; exists {
+// 				if distance, exists := startPoint.Distances[firstPoint.ID]; exists {
+// 					totalDistance += distance
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// Calculate distances between consecutive delivery points
+// 	for i := 0; i < len(r.DeliveryPoints)-1; i++ {
+// 		currentPointID := r.DeliveryPoints[i]
+// 		nextPointID := r.DeliveryPoints[i+1]
+
+// 		if currentPoint, exists := deliveryPoints[currentPointID]; exists {
+// 			if distance, exists := currentPoint.Distances[nextPointID]; exists {
+// 				totalDistance += distance
+// 			}
+// 		}
+// 	}
+
+// 	// Calculate return distance from last delivery point back to warehouse
+// 	if len(r.DeliveryPoints) > 0 {
+// 		lastPointID := r.DeliveryPoints[len(r.DeliveryPoints)-1]
+// 		if lastPointID != warehouseID {
+// 			if lastPoint, exists := deliveryPoints[lastPointID]; exists {
+// 				if distance, exists := lastPoint.Distances[warehouseID]; exists {
+// 					totalDistance += distance
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// Store the calculated distance in the route object
+// 	r.TotalDistance = totalDistance
+// 	return totalDistance
+// }
+
+// CalculateTotalDistance computes the total distance of the route including return to warehouse
 func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) int {
 	if len(r.DeliveryPoints) == 0 {
 		return 0
 	}
 
 	totalDistance := 0
+	warehouseID := 1000 // склад (старт і фініш)
 
-	// Set warehouse as default start point if not specified
-	warehouseID := 1000 // Vyshneve warehouse ID
-	startPointID := r.StartPoint
-	if startPointID == 0 {
-		startPointID = warehouseID
-	}
-
-	// Calculate distance from start point (warehouse) to first delivery point
-	if startPointID != r.DeliveryPoints[0] {
-		if startPoint, exists := deliveryPoints[startPointID]; exists {
-			if firstPoint, exists := deliveryPoints[r.DeliveryPoints[0]]; exists {
-				if distance, exists := startPoint.Distances[firstPoint.ID]; exists {
-					totalDistance += distance
-				}
-			}
-		}
-	}
-
-	// Calculate distances between consecutive delivery points
-	for i := 0; i < len(r.DeliveryPoints)-1; i++ {
-		currentPointID := r.DeliveryPoints[i]
-		nextPointID := r.DeliveryPoints[i+1]
-
-		if currentPoint, exists := deliveryPoints[currentPointID]; exists {
-			if distance, exists := currentPoint.Distances[nextPointID]; exists {
+	// Відстань від складу до першої точки
+	if firstPoint, exists := deliveryPoints[r.DeliveryPoints[0]]; exists {
+		if warehouse, ok := deliveryPoints[warehouseID]; ok {
+			if distance, ok := warehouse.Distances[firstPoint.ID]; ok {
 				totalDistance += distance
 			}
 		}
 	}
 
-	// Calculate return distance from last delivery point back to warehouse
-	if len(r.DeliveryPoints) > 0 {
-		lastPointID := r.DeliveryPoints[len(r.DeliveryPoints)-1]
-		if lastPointID != warehouseID {
-			if lastPoint, exists := deliveryPoints[lastPointID]; exists {
-				if distance, exists := lastPoint.Distances[warehouseID]; exists {
-					totalDistance += distance
-				}
+	// Відстані між точками маршруту
+	for i := 0; i < len(r.DeliveryPoints)-1; i++ {
+		fromID := r.DeliveryPoints[i]
+		toID := r.DeliveryPoints[i+1]
+
+		if fromPoint, ok := deliveryPoints[fromID]; ok {
+			if distance, ok := fromPoint.Distances[toID]; ok {
+				totalDistance += distance
 			}
 		}
 	}
 
-	// Ensure we always have a non-zero distance for display purposes
-	// This prevents the UI from showing 0 km when there are actual deliveries
-	if totalDistance == 0 && len(r.DeliveryPoints) > 0 {
-		// Set a minimum distance based on the number of delivery points
-		totalDistance = len(r.DeliveryPoints) * 5
+	// Відстань від останньої точки назад до складу
+	lastPointID := r.DeliveryPoints[len(r.DeliveryPoints)-1]
+	if lastPoint, ok := deliveryPoints[lastPointID]; ok {
+		if distance, ok := lastPoint.Distances[warehouseID]; ok {
+			totalDistance += distance
+		}
 	}
 
 	r.TotalDistance = totalDistance
