@@ -22,7 +22,7 @@ const MapController = ({ center, zoom }) => {
 // Fix for Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x-red.png',
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
@@ -85,6 +85,7 @@ const staticWarehouse = {
 // Static delivery points data based on kyiv_locations.go
 const staticDeliveryPoints = [
   staticWarehouse,
+  // Blue category locations
   {
     id: 1001,
     category: 'Blue',
@@ -112,6 +113,71 @@ const staticDeliveryPoints = [
     latitude: 50.3483,
     longitude: 30.4672
   },
+  {
+    id: 1004,
+    category: 'Blue',
+    pallets: 22,
+    description: 'Auchan Hypermarket',
+    address: 'Kyiv, Lugova St, 12',
+    latitude: 50.4183,
+    longitude: 30.5242
+  },
+  {
+    id: 1005,
+    category: 'Blue',
+    pallets: 24,
+    description: 'Fozzy Hypermarket',
+    address: 'Kyiv, Hryhorenka Ave, 85/1',
+    latitude: 50.4103,
+    longitude: 30.6306
+  },
+  {
+    id: 1006,
+    category: 'Blue',
+    pallets: 21,
+    description: 'Novus Hypermarket',
+    address: 'Kyiv, Kiltseva Rd, 1',
+    latitude: 50.3483,
+    longitude: 30.5483
+  },
+  {
+    id: 1007,
+    category: 'Blue',
+    pallets: 23,
+    description: 'Epicenter K Hypermarket',
+    address: 'Kyiv, Stepana Bandery Ave, 11a',
+    latitude: 50.4869,
+    longitude: 30.4989
+  },
+  {
+    id: 1008,
+    category: 'Blue',
+    pallets: 19,
+    description: 'METRO Cash & Carry',
+    address: 'Kyiv, Kiltseva Rd, 1V',
+    latitude: 50.3476,
+    longitude: 30.5534
+  },
+  {
+    id: 1009,
+    category: 'Blue',
+    pallets: 26,
+    description: 'Fozzy Cash & Carry',
+    address: 'Kyiv, Hlevakha, Kyivska St, 10',
+    latitude: 50.2969,
+    longitude: 30.3346
+  },
+  {
+    id: 1010,
+    category: 'Blue',
+    pallets: 20,
+    description: 'Auchan Hypermarket',
+    address: 'Kyiv, Generala Vatutina Ave, 2T',
+    latitude: 50.4867,
+    longitude: 30.5986
+  },
+  
+  // Green category locations
   {
     id: 1011,
     category: 'Green',
@@ -158,7 +224,117 @@ const staticDeliveryPoints = [
     longitude: 30.4456
   },
   {
+    id: 1016,
+    category: 'Green',
+    pallets: 12,
+    description: 'Silpo Supermarket',
+    address: 'Kyiv, Malyshka St, 3',
+    latitude: 50.4597,
+    longitude: 30.6142
+  },
+  {
+    id: 1017,
+    category: 'Green',
+    pallets: 14,
+    description: 'Varus Supermarket',
+    address: 'Kyiv, Obolonskyi Ave, 1B',
+    latitude: 50.5021,
+    longitude: 30.4979
+  },
+  {
+    id: 1018,
+    category: 'Green',
+    pallets: 13,
+    description: 'Silpo Supermarket',
+    address: 'Kyiv, Peremohy Ave, 87',
+    latitude: 50.4566,
+    longitude: 30.3896
+  },
+  {
+    id: 1019,
+    category: 'Green',
+    pallets: 15,
+    description: 'Novus Supermarket',
+    address: 'Kyiv, Hryhorenka Ave, 18',
+    latitude: 50.4103,
+    longitude: 30.6306
+  },
+  {
+    id: 1020,
+    category: 'Green',
+    pallets: 12,
+    description: 'Megamarket',
+    address: 'Kyiv, Antonovycha St, 50',
+    latitude: 50.4275,
+    longitude: 30.5168
+  },
+  {
     id: 1021,
+    category: 'Green',
+    pallets: 14,
+    description: 'Silpo Supermarket',
+    address: 'Kyiv, Baseina St, 4',
+    latitude: 50.4418,
+    longitude: 30.5196
+  },
+  {
+    id: 1022,
+    category: 'Green',
+    pallets: 13,
+    description: 'Varus Supermarket',
+    address: 'Kyiv, Pravdy Ave, 31A',
+    latitude: 50.4836,
+    longitude: 30.4172
+  },
+  {
+    id: 1023,
+    category: 'Green',
+    pallets: 12,
+    description: 'Silpo Supermarket Lukianivska',
+    address: 'Kyiv, Dehtiarivska St, 53A',
+    latitude: 50.4662,
+    longitude: 30.4823
+  },
+  {
+    id: 1024,
+    category: 'Green',
+    pallets: 15,
+    description: 'Novus Supermarket Lisova',
+    address: 'Kyiv, Bratyslavska St, 3',
+    latitude: 50.4648,
+    longitude: 30.6142
+  },
+  {
+    id: 1025,
+    category: 'Green',
+    pallets: 13,
+    description: 'Silpo Supermarket Teremky',
+    address: 'Kyiv, Akademika Zabolotnoho Ave, 20',
+    latitude: 50.3647,
+    longitude: 30.4542
+  },
+  {
+    id: 1026,
+    category: 'Green',
+    pallets: 14,
+    description: 'Varus Supermarket Nyvky',
+    address: 'Kyiv, Vidradnyi Ave, 2',
+    latitude: 50.4328,
+    longitude: 30.3896
+  },
+  {
+    id: 1027,
+    category: 'Green',
+    pallets: 12,
+    description: 'Megamarket Petrivka',
+    address: 'Kyiv, Stepana Bandery Ave, 23',
+    latitude: 50.4869,
+    longitude: 30.4989
+  },
+  
+  // Yellow category locations
+  {
+    id: 1031,
     category: 'Yellow',
     pallets: 8,
     description: 'ATB Market',
@@ -167,7 +343,7 @@ const staticDeliveryPoints = [
     longitude: 30.4456
   },
   {
-    id: 1022,
+    id: 1032,
     category: 'Yellow',
     pallets: 10,
     description: 'Fora Market',
@@ -176,7 +352,7 @@ const staticDeliveryPoints = [
     longitude: 30.5034
   },
   {
-    id: 1023,
+    id: 1033,
     category: 'Yellow',
     pallets: 7,
     description: 'ATB Market Sviatoshyn',
@@ -185,7 +361,7 @@ const staticDeliveryPoints = [
     longitude: 30.3905
   },
   {
-    id: 1024,
+    id: 1034,
     category: 'Yellow',
     pallets: 9,
     description: 'ATB Market Darnytsia',
@@ -194,7 +370,7 @@ const staticDeliveryPoints = [
     longitude: 30.6841
   },
   {
-    id: 1025,
+    id: 1035,
     category: 'Yellow',
     pallets: 6,
     description: 'Fora Market Pechersk',
@@ -202,8 +378,10 @@ const staticDeliveryPoints = [
     latitude: 50.4237,
     longitude: 30.5362
   },
+  
+  // Purple category locations
   {
-    id: 1031,
+    id: 1041,
     category: 'Purple',
     pallets: 5,
     description: 'Minimarket Rukavychka',
@@ -212,7 +390,7 @@ const staticDeliveryPoints = [
     longitude: 30.5034
   },
   {
-    id: 1032,
+    id: 1042,
     category: 'Purple',
     pallets: 4,
     description: 'Convenience Store 24/7',
@@ -600,45 +778,113 @@ const Map = () => {
               )}
               
               {/* Display all delivery points */}
-              {pointsToDisplay.map((point) => {
-                // Find next point in route if this point is in the selected route
-                let nextPointInfo = null;
-                if (selectedRoute && selectedRoute.delivery_points) {
-                  const pointIndex = selectedRoute.delivery_points.indexOf(point.id);
-                  if (pointIndex !== -1 && pointIndex < selectedRoute.delivery_points.length - 1) {
-                    const nextPointId = selectedRoute.delivery_points[pointIndex + 1];
-                    const nextPoint = deliveryPoints.find(p => p.id === nextPointId);
+              {(() => {
+                // Group overlapping points
+                const pointGroups = groupOverlappingPoints(pointsToDisplay);
+                
+                return pointGroups.map((group, groupIndex) => {
+                  const point = group[0]; // Use the first point for positioning
+                  const isOverlapping = group.length > 1;
+                  
+                  // Create a custom icon for overlapping points
+                  let icon = categoryIcons[point.category];
+                  
+                  if (isOverlapping) {
+                    // Create a custom icon with a badge showing the number of overlapping points
+                    const badgeHtml = `
+                      <div style="
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        background-color: red;
+                        color: white;
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        font-size: 12px;
+                        border: 2px solid white;
+                      ">${group.length}</div>
+                    `;
                     
-                    if (nextPoint && selectedRoute.segment_distances && 
-                        selectedRoute.segment_distances[point.id + '-' + nextPointId]) {
-                      nextPointInfo = (
-                        <p><strong>Distance to next stop:</strong> {selectedRoute.segment_distances[point.id + '-' + nextPointId]} km</p>
-                      );
+                    icon = L.divIcon({
+                      className: 'custom-marker-with-badge',
+                      html: `
+                        <div style="position: relative;">
+                          <img 
+                            src="${categoryIcons[point.category].options.iconUrl}" 
+                            style="width: ${categoryIcons[point.category].options.iconSize[0]}px; height: ${categoryIcons[point.category].options.iconSize[1]}px;"
+                          />
+                          ${badgeHtml}
+                        </div>
+                      `,
+                      iconSize: categoryIcons[point.category].options.iconSize,
+                      iconAnchor: categoryIcons[point.category].options.iconAnchor,
+                      popupAnchor: categoryIcons[point.category].options.popupAnchor
+                    });
+                  }
+                  
+                  // Find next point in route if this point is in the selected route
+                  let nextPointInfo = null;
+                  if (selectedRoute && selectedRoute.delivery_points) {
+                    const pointIndex = selectedRoute.delivery_points.indexOf(point.id);
+                    if (pointIndex !== -1 && pointIndex < selectedRoute.delivery_points.length - 1) {
+                      const nextPointId = selectedRoute.delivery_points[pointIndex + 1];
+                      const nextPoint = deliveryPoints.find(p => p.id === nextPointId);
+                      
+                      if (nextPoint && selectedRoute.segment_distances && 
+                          selectedRoute.segment_distances[point.id + '-' + nextPointId]) {
+                        nextPointInfo = (
+                          <p><strong>Distance to next stop:</strong> {selectedRoute.segment_distances[point.id + '-' + nextPointId]} km</p>
+                        );
+                      }
                     }
                   }
-                }
-                
-                return (
-                  <Marker 
-                    key={`marker-${point.id}`} 
-                    position={[point.latitude, point.longitude]}
-                    icon={categoryIcons[point.category]}
-                  >
-                    <Popup>
-                      <div>
-                        <strong>{point.description}</strong><br/>
-                        {point.address}<br/>
-                        {point.pallets > 0 ? `Pallets: ${point.pallets}` : 'Warehouse'}
-                        {selectedRoute && selectedRoute.delivery_points && 
-                         selectedRoute.delivery_points.includes(point.id) && (
-                          <><br/><strong style={{color: 'red'}}>Part of selected route</strong></>
+                  
+                  return (
+                    <Marker 
+                      key={`marker-group-${groupIndex}`} 
+                      position={[point.latitude, point.longitude]}
+                      icon={icon}
+                    >
+                      <Popup>
+                        {isOverlapping ? (
+                          <div>
+                            <strong>{group.length} locations at this point:</strong>
+                            <ul style={{ padding: '0 0 0 20px', margin: '5px 0' }}>
+                              {group.map((p, i) => (
+                                <li key={`popup-item-${i}`}>
+                                  <strong>{p.description}</strong> ({p.category})<br/>
+                                  {p.address}<br/>
+                                  {p.pallets > 0 ? `Pallets: ${p.pallets}` : 'Warehouse'}
+                                  {selectedRoute && selectedRoute.delivery_points && 
+                                   selectedRoute.delivery_points.includes(p.id) && (
+                                    <><br/><strong style={{color: 'red'}}>Part of selected route</strong></>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : (
+                          <div>
+                            <strong>{point.description}</strong><br/>
+                            {point.address}<br/>
+                            {point.pallets > 0 ? `Pallets: ${point.pallets}` : 'Warehouse'}
+                            {selectedRoute && selectedRoute.delivery_points && 
+                             selectedRoute.delivery_points.includes(point.id) && (
+                              <><br/><strong style={{color: 'red'}}>Part of selected route</strong></>
+                            )}
+                            {nextPointInfo}
+                          </div>
                         )}
-                        {nextPointInfo}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
+                      </Popup>
+                    </Marker>
+                  );
+                });
+              })()}
             </MapContainer>
           </div>
         </Box>
@@ -768,3 +1014,33 @@ const Map = () => {
 };
 
 export default Map;
+
+// Function to check if two points are at the same location (or very close)
+const arePointsOverlapping = (point1, point2, threshold = 0.0001) => {
+  return Math.abs(point1.latitude - point2.latitude) < threshold && 
+         Math.abs(point1.longitude - point2.longitude) < threshold;
+};
+
+// Function to group overlapping points
+const groupOverlappingPoints = (points) => {
+  const groups = [];
+  const processedIndices = new Set();
+  
+  for (let i = 0; i < points.length; i++) {
+    if (processedIndices.has(i)) continue;
+    
+    const group = [points[i]];
+    processedIndices.add(i);
+    
+    for (let j = i + 1; j < points.length; j++) {
+      if (!processedIndices.has(j) && arePointsOverlapping(points[i], points[j])) {
+        group.push(points[j]);
+        processedIndices.add(j);
+      }
+    }
+    
+    groups.push(group);
+  }
+  
+  return groups;
+};
