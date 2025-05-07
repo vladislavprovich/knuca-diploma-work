@@ -7,9 +7,11 @@
 # ignore lib
 out/
 
+# ignore env file
+.env
+
 # Node.js
 node_modules/
-.env
 dist/
 *.log
 .cache/
