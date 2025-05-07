@@ -264,6 +264,7 @@ func (s *RouteOptimizerService) generateRoutesForCategory(
 			DeliveryPoints: []int{},
 			PointPallets:   make(map[int]int),
 			Status:         models.RouteStatus.Planned,
+			StartPoint:     1000, // Set warehouse as default start point
 		}
 
 		// Calculate remaining capacity for this truck
@@ -333,8 +334,12 @@ func (s *RouteOptimizerService) generateRoutesForCategory(
 			}
 		}
 
-		// Calculate total distance and cost
-		route.CalculateTotalDistance(pointMap)
+		// Calculate total distance using real-world distances and cost
+		// First calculate using the OSRM API for real-world distances
+		if err := s.calculateRealRouteDistance(route, pointMap); err != nil {
+			// Fallback to the simpler distance calculation if OSRM fails
+			route.CalculateTotalDistance(pointMap)
+		}
 		route.CalculateTotalCost(truck)
 
 		// Add route to the list
@@ -405,6 +410,8 @@ func (s *RouteOptimizerService) SaveRoutes(ctx context.Context, routes []*models
 			log.Printf("Warning: Failed to calculate real route distance: %v. Using default distance calculation.", err)
 			// Fallback to the default distance calculation
 			route.CalculateTotalDistance(pointMap)
+			log.Printf("Route %d: Fallback distance calculation: %.1f km with %d delivery points",
+				route.ID, route.TotalDistance, len(route.DeliveryPoints))
 		}
 
 		// Recalculate cost based on the updated distance
@@ -462,6 +469,8 @@ func (s *RouteOptimizerService) UpdateRoute(ctx context.Context, route *models.R
 		log.Printf("Warning: Failed to calculate real route distance: %v. Using default distance calculation.", err)
 		// Fallback to the default distance calculation
 		route.CalculateTotalDistance(pointMap)
+		log.Printf("Route %d: Fallback distance calculation: %.1f km with %d delivery points",
+			route.ID, route.TotalDistance, len(route.DeliveryPoints))
 	}
 
 	// Recalculate cost based on the updated distance
@@ -510,19 +519,15 @@ func (s *RouteOptimizerService) calculateRealRouteDistance(route *models.Route, 
 		return nil
 	}
 
-	// Set warehouse as default start point if not specified
+	// Always use warehouse as start point to match map calculation
 	warehouseID := 1000 // Vyshneve warehouse ID
-	startPointID := route.StartPoint
-	if startPointID == 0 {
-		startPointID = warehouseID
-	}
 
 	// Create an array of waypoints for the route
 	waypoints := make([][]float64, 0)
 
-	// Add start point (warehouse)
-	if startPoint, exists := pointMap[startPointID]; exists {
-		waypoints = append(waypoints, []float64{startPoint.Longitude, startPoint.Latitude})
+	// Add warehouse as start point to match the map calculation
+	if warehouse, exists := pointMap[warehouseID]; exists {
+		waypoints = append(waypoints, []float64{warehouse.Longitude, warehouse.Latitude})
 	}
 
 	// Add all delivery points in order
@@ -532,8 +537,8 @@ func (s *RouteOptimizerService) calculateRealRouteDistance(route *models.Route, 
 		}
 	}
 
-	// Add warehouse as ending point to complete the route
-	if warehouse, exists := pointMap[warehouseID]; exists && startPointID != warehouseID {
+	// Always add warehouse as ending point to complete the route
+	if warehouse, exists := pointMap[warehouseID]; exists {
 		waypoints = append(waypoints, []float64{warehouse.Longitude, warehouse.Latitude})
 	}
 
@@ -568,8 +573,8 @@ func (s *RouteOptimizerService) calculateRealRouteDistance(route *models.Route, 
 
 		// Extract the distance from the response
 		if routes, ok := result["routes"].([]interface{}); ok && len(routes) > 0 {
-			if route, ok := routes[0].(map[string]interface{}); ok {
-				if distance, ok := route["distance"].(float64); ok {
+			if routeData, ok := routes[0].(map[string]interface{}); ok {
+				if distance, ok := routeData["distance"].(float64); ok {
 					// Convert meters to kilometers and round to one decimal place
 					distanceKm := math.Round((distance/1000)*10) / 10
 					totalRealDistance += distanceKm
@@ -581,8 +586,13 @@ func (s *RouteOptimizerService) calculateRealRouteDistance(route *models.Route, 
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// Store the calculated distance in the route object (rounded to integer)
-	route.TotalDistance = int(math.Round(totalRealDistance))
+	// Store the calculated distance in the route object with one decimal place precision
+	route.TotalDistance = math.Round(totalRealDistance*10) / 10
+
+	// Log the calculated distance for debugging
+	log.Printf("Route %d: Calculated real distance: %.1f km with %d delivery points",
+		route.ID, route.TotalDistance, len(route.DeliveryPoints))
+
 	return nil
 }
 

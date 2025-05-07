@@ -434,7 +434,7 @@ const Routes = () => {
                     {truck.license_plate} ({truck.capacity} pallets)
                   </TableCell>
                   <TableCell>{route.delivery_points.length}</TableCell>
-                  <TableCell>{route.total_distance} km</TableCell>
+                  <TableCell>{typeof route.total_distance === 'number' ? route.total_distance.toFixed(1) : route.total_distance} km</TableCell>
                   <TableCell>{route.total_cost} units</TableCell>
                   <TableCell>
                     <Chip 
@@ -500,7 +500,7 @@ const Routes = () => {
                     <strong>Status:</strong> {currentRoute.status}
                   </Typography>
                   <Typography variant="body1">
-                    <strong>Total Distance:</strong> {currentRoute.total_distance} km
+                    <strong>Total Distance:</strong> {typeof currentRoute.total_distance === 'number' ? currentRoute.total_distance.toFixed(1) : currentRoute.total_distance} km
                   </Typography>
                   <Typography variant="body1">
                     <strong>Total Cost:</strong> {currentRoute.total_cost} units
