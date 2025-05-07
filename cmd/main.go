@@ -40,7 +40,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
-	defer mongoDB.Close()
+	defer func() {
+		err = mongoDB.Close()
+		if err != nil {
+			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
+		}
+	}()
 
 	// Initialize repositories
 	deliveryRepo := repository.NewDeliveryPointRepository(mongoDB.DB)
