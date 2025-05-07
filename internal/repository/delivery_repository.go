@@ -3,7 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
-	"universati-savokh/internal/models"
+
+	"github.com/vladislavprovich/knuca-diploma-work/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -84,7 +85,7 @@ func (r *DeliveryPointRepository) Delete(ctx context.Context, id int) error {
 	return err
 }
 
-// GenerateRandomDeliveryPoints creates 40 delivery points with random distances
+// GenerateRandomDeliveryPoints creates delivery points with real Kyiv locations and accurate distances
 func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Context) error {
 	// Check if delivery points already exist
 	count, err := r.collection.CountDocuments(ctx, bson.M{})
@@ -96,29 +97,42 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 		return nil // Delivery points already exist
 	}
 
-	// Generate 40 delivery points with IDs from 1001 to 1040
-	points := make([]interface{}, 40)
-	categories := []string{"Blue", "Green", "Yellow", "Purple"}
+	// Get real Kyiv locations
+	kyivLocations := GetKyivLocations()
 
-	for i := 0; i < 40; i++ {
-		id := 1001 + i
-		category := categories[i%4] // Distribute categories evenly
+	// Calculate real distances between locations
+	distanceMatrix := CalculateRealDistances(kyivLocations)
 
-		// Create a delivery point with random distances to other points
+	// Create points from Kyiv locations
+	points := make([]interface{}, len(kyivLocations))
+
+	// First, add the warehouse (ID 1000)
+	warehouse := kyivLocations[0] // Warehouse is the first location
+	points[0] = &models.DeliveryPoint{
+		ID:          1000,
+		Category:    warehouse.Category,
+		Pallets:     0,
+		Distances:   distanceMatrix[1000],
+		Description: warehouse.Name,
+		Address:     warehouse.Address,
+		Latitude:    warehouse.Latitude,
+		Longitude:   warehouse.Longitude,
+	}
+
+	// Then add all delivery points
+	for i := 1; i < len(kyivLocations); i++ {
+		location := kyivLocations[i]
+		id := 1000 + i
+
 		point := &models.DeliveryPoint{
-			ID:        id,
-			Category:  category,
-			Pallets:   0, // Will be set by user
-			Distances: make(map[int]int),
-		}
-
-		// Generate random distances to other delivery points (1-100 km)
-		for j := 1001; j < 1001+40; j++ {
-			if j != id { // No distance to itself
-				// Random distance between 1 and 100 km
-				distance := 1 + (j*id)%100
-				point.Distances[j] = distance
-			}
+			ID:          id,
+			Category:    location.Category,
+			Pallets:     0, // Will be set by user
+			Distances:   distanceMatrix[id],
+			Description: location.Name,
+			Address:     location.Address,
+			Latitude:    location.Latitude,
+			Longitude:   location.Longitude,
 		}
 
 		points[i] = point
@@ -127,4 +141,12 @@ func (r *DeliveryPointRepository) GenerateRandomDeliveryPoints(ctx context.Conte
 	// Insert all delivery points in a single batch operation
 	_, err = r.collection.InsertMany(ctx, points)
 	return err
+}
+
+// abs returns the absolute value of an integer
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

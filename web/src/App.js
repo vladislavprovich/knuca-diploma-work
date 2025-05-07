@@ -13,6 +13,7 @@ import Trucks from './pages/Trucks';
 import RoutesPage from './pages/Routes';
 import RouteOptimizer from './pages/RouteOptimizer';
 import Reports from './pages/Reports';
+import Map from './pages/Map';
 
 const theme = createTheme({
   palette: {
@@ -40,6 +41,7 @@ function App() {
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/route-optimizer" element={<RouteOptimizer />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/map" element={<Map />} />
         </Routes>
       </Layout>
     </ThemeProvider>

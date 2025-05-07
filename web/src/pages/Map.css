@@ -1,0 +1,65 @@
+.leaflet-tile-pane {
+  filter: grayscale(100%) brightness(1.1) contrast(0.9);
+  opacity: 0.7; /* Increased opacity for better visibility */
+}
+
+.white-map-tiles {
+  background-color: #ffffff;
+}
+
+.leaflet-container {
+  background-color: #ffffff;
+  height: 100vh !important;
+  width: 100% !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Ensure the map container takes full height and width */
+.map-container {
+  height: 100vh !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background-color: #ffffff;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.map-wrapper {
+  height: 100vh !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+  background-color: #ffffff;
+  position: relative;
+}
+
+/* Fix for popup styles */
+.leaflet-popup-content {
+  margin: 13px 19px;
+  line-height: 1.4;
+}
+
+.leaflet-popup-content p {
+  margin: 18px 0;
+}
+
+/* Make controls more visible */
+.leaflet-control-zoom {
+  border: 2px solid rgba(0,0,0,0.2) !important;
+}
+
+/* Fix for marker icons */
+.leaflet-marker-icon {
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+}

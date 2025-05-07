@@ -1,4 +1,4 @@
-module universati-savokh
+module github.com/vladislavprovich/knuca-diploma-work
 
 go 1.23.6
 

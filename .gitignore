@@ -6,3 +6,12 @@
 
 # ignore lib
 out/
+
+# Node.js
+node_modules/
+.env
+dist/
+*.log
+.cache/
+
+web/node_modules/

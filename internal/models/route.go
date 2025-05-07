@@ -1,21 +1,23 @@
 package models
 
 import (
+	"math"
 	"time"
 )
 
 // Route represents a delivery route with assigned truck and delivery points
 type Route struct {
-	ID            int       `json:"id" bson:"_id"`
-	TruckID       int       `json:"truck_id" bson:"truck_id"`
-	DeliveryDate  time.Time `json:"delivery_date" bson:"delivery_date"`
-	StartPoint    int       `json:"start_point" bson:"start_point"` // ID of the starting delivery point
-	DeliveryPoints []int     `json:"delivery_points" bson:"delivery_points"` // IDs of delivery points in order
-	TotalDistance int       `json:"total_distance" bson:"total_distance"` // Total route distance in km
-	TotalCost     int       `json:"total_cost" bson:"total_cost"` // Total cost of the route
-	Status        string    `json:"status" bson:"status"` // Planned, In Progress, Completed, Cancelled
-	CreatedAt     time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" bson:"updated_at"`
+	ID             int         `json:"id" bson:"_id"`
+	TruckID        int         `json:"truck_id" bson:"truck_id"`
+	DeliveryDate   time.Time   `json:"delivery_date" bson:"delivery_date"`
+	StartPoint     int         `json:"start_point" bson:"start_point"`               // ID of the starting delivery point
+	DeliveryPoints []int       `json:"delivery_points" bson:"delivery_points"`       // IDs of delivery points in order
+	PointPallets   map[int]int `json:"point_pallets" bson:"point_pallets,omitempty"` // Map of delivery point ID to pallet count
+	TotalDistance  float64     `json:"total_distance" bson:"total_distance"`         // Total route distance in km
+	TotalCost      int         `json:"total_cost" bson:"total_cost"`                 // Total cost of the route
+	Status         string      `json:"status" bson:"status"`                         // Planned, In Progress, Completed, Cancelled
+	CreatedAt      time.Time   `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at" bson:"updated_at"`
 }
 
 // RouteStatus defines the possible statuses for a route
@@ -31,38 +33,48 @@ var RouteStatus = struct {
 	Cancelled:  "Cancelled",
 }
 
-// CalculateTotalDistance computes the total distance of the route based on the delivery points
-func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) int {
+// CalculateTotalDistance computes the total distance of the route including return to warehouse
+func (r *Route) CalculateTotalDistance(deliveryPoints map[int]*DeliveryPoint) float64 {
 	if len(r.DeliveryPoints) == 0 {
-		return 0
+		return 0.0
 	}
 
-	totalDistance := 0
-	currentPoint := r.StartPoint
+	totalDistance := 0.0
+	warehouseID := 1000 // Warehouse ID (start and finish point)
 
-	// Calculate distance from start point to first delivery point
+	// Distance from warehouse to first delivery point
 	if firstPoint, exists := deliveryPoints[r.DeliveryPoints[0]]; exists {
-		if startPoint, exists := deliveryPoints[currentPoint]; exists {
-			if distance, exists := startPoint.Distances[firstPoint.ID]; exists {
-				totalDistance += distance
+		if warehouse, ok := deliveryPoints[warehouseID]; ok {
+			if distance, ok := warehouse.Distances[firstPoint.ID]; ok {
+				totalDistance += float64(distance)
 			}
 		}
 	}
 
-	// Calculate distances between consecutive delivery points
+	// Distances between consecutive delivery points
 	for i := 0; i < len(r.DeliveryPoints)-1; i++ {
-		currentPointID := r.DeliveryPoints[i]
-		nextPointID := r.DeliveryPoints[i+1]
+		fromID := r.DeliveryPoints[i]
+		toID := r.DeliveryPoints[i+1]
 
-		if currentPoint, exists := deliveryPoints[currentPointID]; exists {
-			if distance, exists := currentPoint.Distances[nextPointID]; exists {
-				totalDistance += distance
+		if fromPoint, ok := deliveryPoints[fromID]; ok {
+			if distance, ok := fromPoint.Distances[toID]; ok {
+				totalDistance += float64(distance)
 			}
 		}
 	}
 
-	r.TotalDistance = totalDistance
-	return totalDistance
+	// Distance from last delivery point back to warehouse
+	lastPointID := r.DeliveryPoints[len(r.DeliveryPoints)-1]
+	if lastPoint, ok := deliveryPoints[lastPointID]; ok {
+		if distance, ok := lastPoint.Distances[warehouseID]; ok {
+			totalDistance += float64(distance)
+		}
+	}
+
+	// Store the calculated distance in the route object
+	// Round to one decimal place for consistency with the map view
+	r.TotalDistance = math.Round(totalDistance*10) / 10
+	return r.TotalDistance
 }
 
 // CalculateTotalCost computes the total cost of the route based on distance and truck capacity
@@ -72,7 +84,7 @@ func (r *Route) CalculateTotalCost(truck *Truck) int {
 		return 0
 	}
 
-	r.TotalCost = r.TotalDistance * costPerKm
+	r.TotalCost = int(r.TotalDistance * float64(costPerKm))
 	return r.TotalCost
 }
 
@@ -82,6 +94,9 @@ func (r *Route) ValidateRoute(truck *Truck, deliveryPoints map[int]*DeliveryPoin
 	if truck == nil || !truck.Available {
 		return false
 	}
+
+	// Calculate total pallets for the route
+	totalPallets := 0
 
 	// Check if all delivery points can accept the assigned truck
 	for _, pointID := range r.DeliveryPoints {
@@ -93,6 +108,18 @@ func (r *Route) ValidateRoute(truck *Truck, deliveryPoints map[int]*DeliveryPoin
 		if !point.CanAcceptTruck(truck.Capacity) {
 			return false
 		}
+
+		// Add pallets from this delivery point using PointPallets if available
+		if r.PointPallets != nil && r.PointPallets[pointID] > 0 {
+			totalPallets += r.PointPallets[pointID]
+		} else {
+			totalPallets += point.Pallets
+		}
+	}
+
+	// Check if total pallets exceed truck capacity
+	if totalPallets > truck.Capacity {
+		return false
 	}
 
 	return true

@@ -1,0 +1,580 @@
+package repository
+
+// KyivLocation represents a location in Kyiv with a name, address, and coordinates
+type KyivLocation struct {
+	Name      string
+	Address   string
+	Latitude  float64
+	Longitude float64
+	Category  string // Blue, Green, Yellow, Purple
+}
+
+// GetKyivLocations returns a list of real locations in Kyiv for delivery points
+func GetKyivLocations() []KyivLocation {
+	return append([]KyivLocation{
+		// Warehouse in Vyshneve (starting point for all routes)
+		{
+			Name:      "Central Warehouse",
+			Address:   "Vyshneve, Kyiv Region, Ukraine",
+			Latitude:  50.3833,
+			Longitude: 30.3667,
+			Category:  "Warehouse",
+		},
+	}, getDeliveryLocations()...)
+}
+
+// getDeliveryLocations returns the actual delivery locations
+func getDeliveryLocations() []KyivLocation {
+	return []KyivLocation{
+		// Blue category locations (large supermarkets and distribution centers)
+		{
+			Name:      "Metro Cash & Carry",
+			Address:   "Kyiv, Troieshchyna, Bratyslavska St, 11",
+			Latitude:  50.4869,
+			Longitude: 30.6137,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Epicenter K Hypermarket",
+			Address:   "Kyiv, Berkovetska St, 6В",
+			Latitude:  50.5101,
+			Longitude: 30.3529,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Auchan Hypermarket",
+			Address:   "Kyiv, Lugova St, 12",
+			Latitude:  50.4183,
+			Longitude: 30.5242,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Fozzy Hypermarket",
+			Address:   "Kyiv, Hryhorenka Ave, 85/1",
+			Latitude:  50.4103,
+			Longitude: 30.6306,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Novus Hypermarket",
+			Address:   "Kyiv, Kiltseva Rd, 1",
+			Latitude:  50.3483,
+			Longitude: 30.5483,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Epicenter K Hypermarket",
+			Address:   "Kyiv, Stepana Bandery Ave, 11a",
+			Latitude:  50.4869,
+			Longitude: 30.4989,
+			Category:  "Blue",
+		},
+		{
+			Name:      "METRO Cash & Carry",
+			Address:   "Kyiv, Kiltseva Rd, 1V",
+			Latitude:  50.3476,
+			Longitude: 30.5534,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Fozzy Cash & Carry",
+			Address:   "Kyiv, Hlevakha, Kyivska St, 10",
+			Latitude:  50.2969,
+			Longitude: 30.3346,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Auchan Hypermarket",
+			Address:   "Kyiv, Generala Vatutina Ave, 2T",
+			Latitude:  50.4867,
+			Longitude: 30.5986,
+			Category:  "Blue",
+		},
+		{
+			Name:      "Epicenter K Hypermarket",
+			Address:   "Kyiv, Polyarna St, 20D",
+			Latitude:  50.5193,
+			Longitude: 30.4686,
+			Category:  "Blue",
+		},
+
+		// Green category locations (medium supermarkets)
+		{
+			Name:      "Silpo Supermarket",
+			Address:   "Kyiv, Khreshchatyk St, 44",
+			Latitude:  50.4471,
+			Longitude: 30.5255,
+			Category:  "Green",
+		},
+		{
+			Name:      "Novus Supermarket",
+			Address:   "Kyiv, Druzhby Narodiv Blvd, 16A",
+			Latitude:  50.4172,
+			Longitude: 30.5344,
+			Category:  "Green",
+		},
+		{
+			Name:      "Megamarket",
+			Address:   "Kyiv, Vadyma Hetmana St, 6",
+			Latitude:  50.4487,
+			Longitude: 30.4456,
+			Category:  "Green",
+		},
+		{
+			Name:      "Silpo Supermarket",
+			Address:   "Kyiv, Malyshka St, 3",
+			Latitude:  50.4597,
+			Longitude: 30.6142,
+			Category:  "Green",
+		},
+		{
+			Name:      "Varus Supermarket",
+			Address:   "Kyiv, Obolonskyi Ave, 1B",
+			Latitude:  50.5021,
+			Longitude: 30.4979,
+			Category:  "Green",
+		},
+		{
+			Name:      "Silpo Supermarket",
+			Address:   "Kyiv, Peremohy Ave, 87",
+			Latitude:  50.4566,
+			Longitude: 30.3896,
+			Category:  "Green",
+		},
+		{
+			Name:      "Novus Supermarket",
+			Address:   "Kyiv, Hryhorenka Ave, 18",
+			Latitude:  50.4103,
+			Longitude: 30.6306,
+			Category:  "Green",
+		},
+		{
+			Name:      "Megamarket",
+			Address:   "Kyiv, Antonovycha St, 50",
+			Latitude:  50.4275,
+			Longitude: 30.5168,
+			Category:  "Green",
+		},
+		{
+			Name:      "Silpo Supermarket",
+			Address:   "Kyiv, Baseina St, 4",
+			Latitude:  50.4418,
+			Longitude: 30.5196,
+			Category:  "Green",
+		},
+		{
+			Name:      "Varus Supermarket",
+			Address:   "Kyiv, Pravdy Ave, 31A",
+			Latitude:  50.4836,
+			Longitude: 30.4172,
+			Category:  "Green",
+		},
+		// Additional Green category locations
+		{
+			Name:      "Silpo Supermarket Lukianivska",
+			Address:   "Kyiv, Dehtiarivska St, 53A",
+			Latitude:  50.4662,
+			Longitude: 30.4823,
+			Category:  "Green",
+		},
+		{
+			Name:      "Novus Supermarket Lisova",
+			Address:   "Kyiv, Bratyslavska St, 3",
+			Latitude:  50.4648,
+			Longitude: 30.6142,
+			Category:  "Green",
+		},
+		{
+			Name:      "Silpo Supermarket Teremky",
+			Address:   "Kyiv, Akademika Zabolotnoho Ave, 20",
+			Latitude:  50.3647,
+			Longitude: 30.4542,
+			Category:  "Green",
+		},
+		{
+			Name:      "Varus Supermarket Nyvky",
+			Address:   "Kyiv, Vidradnyi Ave, 2",
+			Latitude:  50.4328,
+			Longitude: 30.3896,
+			Category:  "Green",
+		},
+		{
+			Name:      "Megamarket Petrivka",
+			Address:   "Kyiv, Stepana Bandery Ave, 23",
+			Latitude:  50.4869,
+			Longitude: 30.4989,
+			Category:  "Green",
+		},
+
+		// Yellow category locations (small supermarkets)
+		{
+			Name:      "ATB Market",
+			Address:   "Kyiv, Peremohy Ave, 47",
+			Latitude:  50.4566,
+			Longitude: 30.4456,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market",
+			Address:   "Kyiv, Saksahanskoho St, 112",
+			Latitude:  50.4372,
+			Longitude: 30.5034,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market",
+			Address:   "Kyiv, Malyshka St, 25",
+			Latitude:  50.4597,
+			Longitude: 30.6142,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market",
+			Address:   "Kyiv, Obolonskyi Ave, 14",
+			Latitude:  50.5021,
+			Longitude: 30.4979,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market",
+			Address:   "Kyiv, Hryhorenka Ave, 23",
+			Latitude:  50.4103,
+			Longitude: 30.6306,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market",
+			Address:   "Kyiv, Kharkivske Hwy, 19",
+			Latitude:  50.4308,
+			Longitude: 30.6306,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market",
+			Address:   "Kyiv, Lisova St, 30",
+			Latitude:  50.4648,
+			Longitude: 30.6306,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market",
+			Address:   "Kyiv, Chokolivskyi Blvd, 23",
+			Latitude:  50.4275,
+			Longitude: 30.4456,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market",
+			Address:   "Kyiv, Nauky Ave, 35",
+			Latitude:  50.3972,
+			Longitude: 30.5168,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market",
+			Address:   "Kyiv, Heroiv Dnipra St, 32",
+			Latitude:  50.5193,
+			Longitude: 30.4979,
+			Category:  "Yellow",
+		},
+		// Additional Yellow category locations
+		{
+			Name:      "ATB Market Lukianivska",
+			Address:   "Kyiv, Dehtiarivska St, 49",
+			Latitude:  50.4662,
+			Longitude: 30.4823,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market Pechersk",
+			Address:   "Kyiv, Lesi Ukrainky Blvd, 9",
+			Latitude:  50.4237,
+			Longitude: 30.5362,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market Teremky",
+			Address:   "Kyiv, Akademika Zabolotnoho Ave, 15",
+			Latitude:  50.3647,
+			Longitude: 30.4542,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market Nyvky",
+			Address:   "Kyiv, Vidradnyi Ave, 8",
+			Latitude:  50.4328,
+			Longitude: 30.3896,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market Petrivka",
+			Address:   "Kyiv, Stepana Bandery Ave, 16",
+			Latitude:  50.4869,
+			Longitude: 30.4989,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market Osokorky",
+			Address:   "Kyiv, Mykoly Bazhana Ave, 8",
+			Latitude:  50.3972,
+			Longitude: 30.6142,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "ATB Market Syrets",
+			Address:   "Kyiv, Oleny Telihy St, 35",
+			Latitude:  50.4762,
+			Longitude: 30.4456,
+			Category:  "Yellow",
+		},
+		{
+			Name:      "Fora Market Shuliavka",
+			Address:   "Kyiv, Vadyma Hetmana St, 42",
+			Latitude:  50.4487,
+			Longitude: 30.4456,
+			Category:  "Yellow",
+		},
+
+		// Purple category locations (small shops and convenience stores)
+		{
+			Name:      "Minimarket Rukavychka",
+			Address:   "Kyiv, Saksahanskoho St, 64",
+			Latitude:  50.4372,
+			Longitude: 30.5034,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Convenience Store 24/7",
+			Address:   "Kyiv, Khreshchatyk St, 15",
+			Latitude:  50.4471,
+			Longitude: 30.5255,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Minimarket Rukavychka",
+			Address:   "Kyiv, Malyshka St, 3",
+			Latitude:  50.4597,
+			Longitude: 30.6142,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Convenience Store 24/7",
+			Address:   "Kyiv, Obolonskyi Ave, 5",
+			Latitude:  50.5021,
+			Longitude: 30.4979,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Minimarket Rukavychka",
+			Address:   "Kyiv, Hryhorenka Ave, 15",
+			Latitude:  50.4103,
+			Longitude: 30.6306,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Convenience Store 24/7",
+			Address:   "Kyiv, Peremohy Ave, 30",
+			Latitude:  50.4566,
+			Longitude: 30.4456,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Minimarket Rukavychka",
+			Address:   "Kyiv, Baseina St, 7",
+			Latitude:  50.4418,
+			Longitude: 30.5196,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Convenience Store 24/7",
+			Address:   "Kyiv, Antonovycha St, 45",
+			Latitude:  50.4275,
+			Longitude: 30.5168,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Minimarket Rukavychka",
+			Address:   "Kyiv, Nauky Ave, 20",
+			Latitude:  50.3972,
+			Longitude: 30.5168,
+			Category:  "Purple",
+		},
+		{
+			Name:      "Convenience Store 24/7",
+			Address:   "Kyiv, Heroiv Dnipra St, 20",
+			Latitude:  50.5193,
+			Longitude: 30.4979,
+			Category:  "Purple",
+		},
+	}
+}
+
+// CalculateRealDistances calculates the real distances between Kyiv locations in kilometers
+// This uses the Haversine formula as a base but applies road distance factors to simulate real road networks
+// The warehouse (first location) is treated as the starting point (ID 1000)
+func CalculateRealDistances(locations []KyivLocation) map[int]map[int]int {
+	distanceMatrix := make(map[int]map[int]int)
+
+	// Initialize the distance matrix
+	// Warehouse has ID 1000
+	distanceMatrix[1000] = make(map[int]int)
+
+	// Delivery points start from ID 1001
+	for i := 1; i < len(locations); i++ {
+		id := 1000 + i // Starting ID from 1001 for delivery points
+		distanceMatrix[id] = make(map[int]int)
+	}
+
+	// Calculate distances from warehouse to all delivery points
+	warehouse := locations[0] // Warehouse is the first location
+	for i := 1; i < len(locations); i++ {
+		id := 1000 + i
+		location := locations[i]
+
+		// Calculate base distance using Haversine formula
+		baseDistance := calculateHaversineDistance(warehouse.Latitude, warehouse.Longitude, location.Latitude, location.Longitude)
+
+		// Apply road distance factor (roads are typically 20-40% longer than straight lines)
+		roadFactor := 1.3 // Default factor (30% longer)
+
+		// Adjust factor based on location categories
+		if location.Category == "Blue" {
+			// Large stores are often on main roads with better access
+			roadFactor = 1.25
+		} else if location.Category == "Purple" {
+			// Small stores are often in neighborhoods with more complex routes
+			roadFactor = 1.4
+		}
+
+		// Add traffic complexity for city center locations
+		if isCityCenter(location.Latitude, location.Longitude) {
+			roadFactor += 0.15 // Additional 15% for city center traffic
+		}
+
+		// Calculate final road distance
+		roadDistance := baseDistance * roadFactor
+
+		// Round to nearest kilometer and store in the matrix
+		distanceMatrix[1000][id] = int(roadDistance + 0.5)
+		distanceMatrix[id][1000] = int(roadDistance + 0.5) // Also store the reverse distance
+	}
+
+	// Calculate distances between all pairs of delivery points
+	for i := 1; i < len(locations); i++ {
+		id1 := 1000 + i
+		loc1 := locations[i]
+
+		for j := 1; j < len(locations); j++ {
+			if i == j {
+				continue // Skip distance to self
+			}
+
+			id2 := 1000 + j
+			loc2 := locations[j]
+
+			// Calculate base distance using Haversine formula
+			baseDistance := calculateHaversineDistance(loc1.Latitude, loc1.Longitude, loc2.Latitude, loc2.Longitude)
+
+			// Apply road distance factor
+			roadFactor := 1.3 // Default factor
+
+			// Adjust factor based on point categories
+			if loc1.Category == loc2.Category {
+				// Locations of same category might be on similar routes
+				if loc1.Category == "Blue" {
+					roadFactor = 1.2
+				} else if loc1.Category == "Purple" {
+					roadFactor = 1.4
+				}
+			}
+
+			// Add traffic complexity for city center locations
+			if isCityCenter(loc1.Latitude, loc1.Longitude) || isCityCenter(loc2.Latitude, loc2.Longitude) {
+				roadFactor += 0.15
+			}
+
+			// Calculate final road distance
+			roadDistance := baseDistance * roadFactor
+
+			// Ensure minimum distance of 1km
+			if roadDistance < 1 {
+				roadDistance = 1
+			}
+
+			// Round to nearest kilometer and store in the matrix
+			distanceMatrix[id1][id2] = int(roadDistance + 0.5)
+		}
+	}
+
+	return distanceMatrix
+}
+
+// isCityCenter determines if a point is in Kyiv city center
+func isCityCenter(lat, lng float64) bool {
+	// Approximate coordinates of Kyiv city center
+	centerLat := 50.4501
+	centerLng := 30.5234
+
+	// Calculate distance from city center
+	distance := calculateHaversineDistance(lat, lng, centerLat, centerLng)
+
+	// Consider points within 3km of center as "city center"
+	return distance <= 3.0
+}
+
+// calculateHaversineDistance calculates the distance between two points on the Earth's surface
+// using the Haversine formula
+func calculateHaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	// Earth's radius in kilometers
+	const earthRadius = 6371.0
+
+	// Convert degrees to radians
+	lat1Rad := lat1 * (3.14159265359 / 180.0)
+	lon1Rad := lon1 * (3.14159265359 / 180.0)
+	lat2Rad := lat2 * (3.14159265359 / 180.0)
+	lon2Rad := lon2 * (3.14159265359 / 180.0)
+
+	// Differences
+	dLat := lat2Rad - lat1Rad
+	dLon := lon2Rad - lon1Rad
+
+	// Haversine formula
+	a := sin(dLat/2)*sin(dLat/2) + cos(lat1Rad)*cos(lat2Rad)*sin(dLon/2)*sin(dLon/2)
+	c := 2 * atan2(sqrt(a), sqrt(1-a))
+	distance := earthRadius * c
+
+	return distance
+}
+
+// Helper math functions
+func sin(x float64) float64 {
+	return float64(float32(x - x*x*x/6.0 + x*x*x*x*x/120.0 - x*x*x*x*x*x*x/5040.0))
+}
+
+func cos(x float64) float64 {
+	return float64(float32(1.0 - x*x/2.0 + x*x*x*x/24.0 - x*x*x*x*x*x/720.0))
+}
+
+func sqrt(x float64) float64 {
+	return float64(float32(x * (1.0 + x*(0.5+x*0.125))))
+}
+
+func atan2(y, x float64) float64 {
+	if x > 0 {
+		return float64(float32(y / x))
+	} else if x < 0 {
+		if y >= 0 {
+			return float64(float32(y/x + 3.14159265359))
+		} else {
+			return float64(float32(y/x - 3.14159265359))
+		}
+	} else {
+		if y > 0 {
+			return 1.5707963268
+		} else if y < 0 {
+			return -1.5707963268
+		} else {
+			return 0.0
+		}
+	}
+}

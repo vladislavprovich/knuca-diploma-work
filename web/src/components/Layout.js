@@ -22,6 +22,7 @@ import {
   Settings as OptimizerIcon,
   Assessment as ReportsIcon,
   Menu as MenuIcon,
+  Map as MapIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -30,6 +31,26 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme, open }) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: 0,
+    ...(open && {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: drawerWidth,
+    }),
+  }),
+);
+
+// Special main component for the Map page with no padding
+const MapMain = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
+  ({ theme, open }) => ({
+    flexGrow: 1,
+    padding: 0, // No padding for map page
     transition: theme.transitions.create('margin', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -73,6 +94,9 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 const Layout = ({ children }) => {
   const [open, setOpen] = React.useState(true);
   const location = useLocation();
+  
+  // Check if current page is the map page
+  const isMapPage = location.pathname === '/map';
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -85,6 +109,7 @@ const Layout = ({ children }) => {
     { text: 'Routes', icon: <RoutesIcon />, path: '/routes' },
     { text: 'Route Optimizer', icon: <OptimizerIcon />, path: '/route-optimizer' },
     { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
+    { text: 'Map', icon: <MapIcon />, path: '/map' },
   ];
 
   return (
@@ -139,10 +164,20 @@ const Layout = ({ children }) => {
           ))}
         </List>
       </Drawer>
-      <Main open={open}>
-        <DrawerHeader />
-        {children}
-      </Main>
+      
+      {isMapPage ? (
+        // Use MapMain with no padding for the map page
+        <MapMain open={open}>
+          <DrawerHeader />
+          {children}
+        </MapMain>
+      ) : (
+        // Use regular Main with padding for other pages
+        <Main open={open}>
+          <DrawerHeader />
+          {children}
+        </Main>
+      )}
     </Box>
   );
 };

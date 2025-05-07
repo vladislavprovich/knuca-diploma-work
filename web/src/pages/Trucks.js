@@ -34,6 +34,9 @@ const Trucks = () => {
   const [capacityFilter, setCapacityFilter] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('');
   const [addTruckDialogOpen, setAddTruckDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currentTruck, setCurrentTruck] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [newTruck, setNewTruck] = useState({
     license_plate: '',
     brand: '',
@@ -124,6 +127,33 @@ const Trucks = () => {
       alert('Failed to create truck. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (truck) => {
+    setCurrentTruck(truck);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setCurrentTruck(null);
+  };
+
+  const handleDeleteTruck = async () => {
+    if (!currentTruck) return;
+    
+    setDeleting(true);
+    try {
+      await axios.delete(`/api/trucks/${currentTruck.id}`);
+      fetchTrucks(); // Refresh the truck list
+      setDeleteDialogOpen(false);
+      setCurrentTruck(null);
+    } catch (error) {
+      console.error('Error deleting truck:', error);
+      alert('Failed to delete truck. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -224,6 +254,7 @@ const Trucks = () => {
               <TableCell>Driver</TableCell>
               <TableCell>Trailer</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -252,11 +283,42 @@ const Trucks = () => {
                     size="small" 
                   />
                 </TableCell>
+                <TableCell>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={() => handleDeleteClick(truck)}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Delete Truck Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>Delete Truck</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the truck with driver {currentTruck?.driver_name} {currentTruck?.driver_surname}? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteTruck} 
+            variant="contained" 
+            color="error"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Truck Dialog */}
       <Dialog open={addTruckDialogOpen} onClose={handleCloseAddTruck} maxWidth="sm" fullWidth>

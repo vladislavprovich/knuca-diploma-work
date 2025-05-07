@@ -2,15 +2,15 @@ package models
 
 // Truck represents a delivery vehicle in the fleet
 type Truck struct {
-	ID           int    `json:"id" bson:"_id"`
-	LicensePlate string `json:"license_plate" bson:"license_plate"`
-	Brand        string `json:"brand" bson:"brand"`
-	Capacity     int    `json:"capacity" bson:"capacity"` // Number of pallets (10, 15, 18, or 33)
-	DriverName   string `json:"driver_name" bson:"driver_name"`
+	ID            int    `json:"id" bson:"_id"`
+	LicensePlate  string `json:"license_plate" bson:"license_plate"`
+	Brand         string `json:"brand" bson:"brand"`
+	Capacity      int    `json:"capacity" bson:"capacity"` // Number of pallets (10, 15, 18, or 33)
+	DriverName    string `json:"driver_name" bson:"driver_name"`
 	DriverSurname string `json:"driver_surname" bson:"driver_surname"`
-	HasTrailer   bool   `json:"has_trailer" bson:"has_trailer"` // Only true for 33-pallet trucks
-	TrailerInfo  string `json:"trailer_info,omitempty" bson:"trailer_info,omitempty"`
-	Available    bool   `json:"available" bson:"available"` // Whether the truck is available for assignment
+	HasTrailer    bool   `json:"has_trailer" bson:"has_trailer"` // Only true for 33-pallet trucks
+	TrailerInfo   string `json:"trailer_info,omitempty" bson:"trailer_info,omitempty"`
+	Available     bool   `json:"available" bson:"available"` // Whether the truck is available for assignment
 }
 
 // ValidTruckCapacities defines the allowed truck capacities in the system
